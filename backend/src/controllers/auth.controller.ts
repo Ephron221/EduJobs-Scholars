@@ -401,7 +401,8 @@ export const googleLogin = async (req: Request, res: Response): Promise<void> =>
       token,
       user
     });
-  } catch (error) {
-    res.status(500).json({ message: 'Google authentication failed', error });
+  } catch (error: any) {
+    console.error('Google Auth Error:', error.message || error);
+    res.status(500).json({ message: 'Google authentication failed', error: error.message || 'Server error' });
   }
 };

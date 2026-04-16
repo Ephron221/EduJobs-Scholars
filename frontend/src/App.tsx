@@ -106,12 +106,13 @@ function AppRoutes() {
 }
 
 export default function App() {
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  // Hardcoding corrected Client ID to ensure immediate resolution
+  const googleClientId = "1047511645540-ldvt1iea73uc2gi40971vcgklmcgsb0k.apps.googleusercontent.com";
 
   return (
     <GoogleOAuthProvider clientId={googleClientId}>
       <ThemeProvider>
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthProvider>
             <NotificationProvider>
               {/* Root wrapper: id required so ThemeContext can directly set bg/color */}

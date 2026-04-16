@@ -205,7 +205,7 @@ const LoginPage = () => {
                   useOneTap
                   theme="filled_black"
                   shape="pill"
-                  width="100%"
+                  logo_alignment="left"
                 />
               </div>
             </div>

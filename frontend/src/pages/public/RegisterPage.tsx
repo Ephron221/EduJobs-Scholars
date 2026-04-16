@@ -159,8 +159,8 @@ export default function RegisterPage() {
                   <GraduationCap size={24} />
                 </div>
                 <div className="text-center">
-                  <span className={`block font-black text-sm uppercase tracking-tighter ${role === 'student' ? 'text-cyan-600' : 'text-gray-500'}`}>Scholarship</span>
-                  <span className={`block font-bold text-xs ${role === 'student' ? 'text-cyan-500/70' : 'text-gray-400'}`}>Seeking Student</span>
+                  <span className={`block font-black text-xs uppercase tracking-tight ${role === 'student' ? 'text-cyan-600' : 'text-gray-500'}`}>Scholarship</span>
+                  <span className={`block font-bold text-[10px] whitespace-nowrap ${role === 'student' ? 'text-cyan-500/70' : 'text-gray-400'}`}>Seeking Student</span>
                 </div>
                 {role === 'student' && (
                   <motion.div layoutId="role-check" className="absolute -top-2 -right-2 w-6 h-6 bg-cyan-500 text-white rounded-full flex items-center justify-center shadow-lg"><CheckCircle2 size={14} /></motion.div>
@@ -180,8 +180,8 @@ export default function RegisterPage() {
                   <Briefcase size={24} />
                 </div>
                 <div className="text-center">
-                  <span className={`block font-black text-sm uppercase tracking-tighter ${role === 'jobseeker' ? 'text-blue-600' : 'text-gray-500'}`}>Career</span>
-                  <span className={`block font-bold text-xs ${role === 'jobseeker' ? 'text-blue-500/70' : 'text-gray-400'}`}>Job Seeker</span>
+                  <span className={`block font-black text-xs uppercase tracking-tight ${role === 'jobseeker' ? 'text-blue-600' : 'text-gray-500'}`}>Career</span>
+                  <span className={`block font-bold text-[10px] whitespace-nowrap ${role === 'jobseeker' ? 'text-blue-500/70' : 'text-gray-400'}`}>Job Seeker</span>
                 </div>
                 {role === 'jobseeker' && (
                   <motion.div layoutId="role-check" className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-lg"><CheckCircle2 size={14} /></motion.div>
@@ -263,7 +263,7 @@ export default function RegisterPage() {
                   onError={() => toast.error('Google Sign-Up failed')}
                   theme="outline"
                   shape="pill"
-                  width="100%"
+                  logo_alignment="left"
                   text="signup_with"
                 />
               </div>
