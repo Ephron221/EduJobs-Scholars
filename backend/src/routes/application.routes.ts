@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import {
   getApplications, getApplicationById, getApplicationsByStudent,
-  createApplication, updateApplication, deleteApplication
+  createApplication, createPublicApplication, updateApplication, deleteApplication
 } from '../controllers/application.controller';
 import { protect, adminOnly } from '../middleware/auth';
 
@@ -9,6 +9,7 @@ const router = Router();
 
 router.get('/', protect, adminOnly, getApplications);
 router.get('/student/:studentId', protect, getApplicationsByStudent);
+router.post('/public', createPublicApplication);
 router.get('/:id', protect, getApplicationById);
 router.post('/', protect, adminOnly, createApplication);
 router.put('/:id', protect, adminOnly, updateApplication);

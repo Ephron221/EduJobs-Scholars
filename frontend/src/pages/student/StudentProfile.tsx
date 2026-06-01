@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { User, Mail, Lock, Save, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { useState, ChangeEvent, FormEvent } from 'react';
+import { User, Mail, Lock, Save, Eye, EyeOff, CheckCircle, Camera } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { authAPI } from '../../api';
 import StudentLayout from './StudentLayout';
@@ -10,18 +10,40 @@ export default function StudentProfile() {
   const { user, updateUser } = useAuth();
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [saving, setSaving] = useState(false);
   const [changingPw, setChangingPw] = useState(false);
 
-  const handleProfileSave = async (e: React.FormEvent) => {
+  const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload a valid image file');
+      return;
+    }
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  const handleProfileSave = async (e: FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await authAPI.updateProfile({ name, email });
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('email', email);
+      if (avatarFile) formData.append('avatar', avatarFile);
+
+      const res = await authAPI.updateProfile(formData);
       updateUser(res.data.user);
+      if (avatarFile) {
+        setAvatarFile(null);
+        setAvatarPreview('');
+      }
       toast.success('Profile updated successfully!');
     } catch (err: unknown) {
       toast.error((err as {response?: {data?: {message?: string}}})?.response?.data?.message || 'Update failed');
@@ -29,7 +51,7 @@ export default function StudentProfile() {
     setSaving(false);
   };
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: FormEvent) => {
     e.preventDefault();
     if (!currentPw || !newPw) { toast.error('Fill in both password fields'); return; }
     if (newPw.length < 6) { toast.error('New password must be at least 6 characters'); return; }
@@ -48,14 +70,28 @@ export default function StudentProfile() {
     <StudentLayout title="My Profile">
       <div className="max-w-2xl space-y-6">
         {/* Avatar / Info card */}
-        <div className="glass-card p-6 flex items-center gap-5">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-black font-black text-2xl shrink-0">
-            {user?.name.charAt(0).toUpperCase()}
+        <div className="glass-card p-6 flex flex-col md:flex-row items-center gap-5">
+          <div className="relative flex-shrink-0">
+            {avatarPreview || user?.avatar ? (
+              <img
+                src={avatarPreview || user?.avatar}
+                alt="Profile"
+                className="w-20 h-20 rounded-2xl object-cover border border-cyan-200"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-black font-black text-3xl">
+                {user?.name?.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <label htmlFor="avatar" className="absolute -bottom-2 -right-2 p-2 rounded-full bg-white border border-gray-200 shadow-sm text-cyan-500 hover:bg-cyan-50 cursor-pointer">
+              <Camera size={18} />
+            </label>
+            <input id="avatar" type="file" accept="image/*" onChange={handleAvatarChange} className="sr-only" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">{user?.name}</h2>
             <p className="text-gray-600 dark:text-gray-400 text-sm">{user?.email}</p>
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex flex-wrap items-center gap-2 mt-2">
               <span className="text-xs bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded-full">
                 {user?.role === 'jobseeker' ? '💼 Jobseeker' : '🎓 Student'}
               </span>
@@ -63,6 +99,9 @@ export default function StudentProfile() {
                 <span className="text-xs text-gray-600 dark:text-gray-400">Joined {format(new Date(user.createdAt), 'MMM yyyy')}</span>
               )}
             </div>
+            {avatarFile && (
+              <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">Selected file: {avatarFile.name}</p>
+            )}
           </div>
         </div>
 

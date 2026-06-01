@@ -6,8 +6,8 @@ export const authAPI = {
   login: (data: { email: string; password: string }) =>
     api.post('/auth/login', data),
   getMe: () => api.get('/auth/me'),
-  updateProfile: (data: { name: string; email: string }) =>
-    api.put('/auth/profile', data),
+  updateProfile: (data: FormData | { name: string; email: string }) =>
+    api.put('/auth/profile', data, data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined),
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     api.put('/auth/change-password', data),
 };
@@ -50,6 +50,7 @@ export const applicationAPI = {
   getByStudent: (studentId: string) => api.get(`/applications/student/${studentId}`),
   getById: (id: string) => api.get(`/applications/${id}`),
   create: (data: unknown) => api.post('/applications', data),
+  createPublic: (data: unknown) => api.post('/applications/public', data),
   update: (id: string, data: unknown) => api.put(`/applications/${id}`, data),
   delete: (id: string) => api.delete(`/applications/${id}`),
 };
@@ -95,6 +96,12 @@ export const studentAPI = {
   update: (id: string, data: unknown) => api.put(`/students/${id}`, data),
   delete: (id: string) => api.delete(`/students/${id}`),
   toggleStatus: (id: string) => api.patch(`/students/${id}/toggle-status`),
+  uploadFiles: (id: string, formData: FormData) =>
+    api.post(`/students/${id}/upload`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  deleteFile: (id: string, fileUrl: string) =>
+    api.delete(`/students/${id}/files`, { data: { fileUrl } }),
+  renameFile: (id: string, fileUrl: string, name: string) =>
+    api.patch(`/students/${id}/files`, { fileUrl, name }),
 };
 
 export const contactAPI = {
@@ -102,4 +109,18 @@ export const contactAPI = {
   getAll: (params?: Record<string, unknown>) => api.get('/contact', { params }),
   updateStatus: (id: string, status: string) => api.patch(`/contact/${id}`, { status }),
   delete: (id: string) => api.delete(`/contact/${id}`),
+};
+
+export const heroImageAPI = {
+  getAll: () => api.get('/hero-images'),
+  create: (data: unknown) => api.post('/hero-images', data),
+  update: (id: string, data: unknown) => api.put(`/hero-images/${id}`, data),
+  delete: (id: string) => api.delete(`/hero-images/${id}`),
+};
+
+export const successStoryAPI = {
+  getAll: () => api.get('/success-stories'),
+  create: (data: unknown) => api.post('/success-stories', data),
+  update: (id: string, data: unknown) => api.put(`/success-stories/${id}`, data),
+  delete: (id: string) => api.delete(`/success-stories/${id}`),
 };

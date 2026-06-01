@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, LogIn, AlertCircle, Loader2, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Mail, Lock, AlertCircle, Loader2, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -101,9 +101,9 @@ const LoginPage = () => {
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white mb-6 shadow-lg shadow-cyan-500/20"
+                className="inline-flex items-center justify-center w-32 h-32 mb-6"
               >
-                <LogIn size={32} />
+                <img src="/logo.png" alt="EduJobs Scholars" className="h-32 w-32 object-contain drop-shadow-lg" />
               </motion.div>
               <h2 className="text-4xl font-black mb-3 text-gray-900 dark:text-white tracking-tight">
                 Welcome <span className="bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-transparent">Back</span>

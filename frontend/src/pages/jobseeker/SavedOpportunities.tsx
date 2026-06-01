@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Bookmark, GraduationCap, Briefcase, Trash2, ExternalLink, MapPin, Globe } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { universityAPI, jobAPI, userAPI } from '../../api';
-import StudentLayout from './StudentLayout';
+import StudentLayout from './JobseekerLayout';
 import Loader from '../../components/Loader';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';

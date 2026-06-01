@@ -23,6 +23,7 @@ export default function StudentLayout({ children, title }: { children: ReactNode
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
@@ -57,17 +58,28 @@ export default function StudentLayout({ children, title }: { children: ReactNode
           </button>
         </div>
 
-        {/* User info */}
+        {/* User profile overview */}
         <div className="p-4 border-b border-gray-200 dark:border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-black font-bold shrink-0">
-              {user?.name.charAt(0).toUpperCase()}
+          <Link to="/dashboard/profile" onClick={closeMobileMenu} className="block rounded-3xl bg-cyan-50/80 dark:bg-white/5 p-4 hover:bg-cyan-100 dark:hover:bg-white/10 transition-all duration-200">
+            <div className="flex items-center gap-3">
+              {user?.avatar ? (
+                <img src={user.avatar} alt={user.name} className="w-12 h-12 rounded-2xl object-cover border border-cyan-200" />
+              ) : (
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-black font-black text-lg">
+                  {user?.name?.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user?.name}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user?.name}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-cyan-600 bg-cyan-100 rounded-full px-2.5 py-1 dark:text-cyan-300 dark:bg-cyan-500/10">
+                {user?.role === 'jobseeker' ? 'Jobseeker' : 'Student'}
+              </span>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Nav */}
@@ -127,6 +139,48 @@ export default function StudentLayout({ children, title }: { children: ReactNode
           <div className="flex items-center gap-3">
             <Link to="/" className="text-xs text-gray-500 dark:text-gray-400 hover:text-cyan-400 transition-colors hidden sm:block">← Public Site</Link>
             <ThemeToggle />
+
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen((prev) => !prev)}
+                className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-white/10 hover:border-cyan-500/30 transition-all duration-200"
+              >
+                {user?.avatar ? (
+                  <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-black font-bold text-sm">
+                    {user?.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="hidden sm:block text-sm font-medium text-gray-900 dark:text-white truncate">{user?.name}</span>
+              </button>
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-3 w-56 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 shadow-xl shadow-gray-200/50 dark:shadow-black/50 z-50">
+                  <div className="p-4 border-b border-gray-200 dark:border-white/10">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user?.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+                    <span className="text-xs inline-flex items-center px-2 py-1 mt-2 rounded-full bg-cyan-500/10 text-cyan-700 dark:text-cyan-300">
+                      {user?.role === 'jobseeker' ? '💼 Jobseeker' : '🎓 Student'}
+                    </span>
+                  </div>
+                  <div className="p-2">
+                    <Link
+                      to="/dashboard/profile"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-all"
+                    >
+                      <User size={15} /> Profile
+                    </Link>
+                    <button
+                      onClick={() => { setUserMenuOpen(false); logout(); navigate('/'); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all"
+                    >
+                      <LogOut size={15} /> Logout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

@@ -1,7 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, GraduationCap, BookOpen, Briefcase, Users,
+  LayoutDashboard, GraduationCap, BookOpen, Briefcase, Users, User,
   ClipboardList, Bell, FileText, LogOut, ChevronRight, Shield, Home, MessageSquare, Menu, X
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -13,11 +13,14 @@ const navItems = [
   { href: '/admin/universities', label: 'Universities', icon: <GraduationCap size={17} /> },
   { href: '/admin/programs', label: 'Programs', icon: <BookOpen size={17} /> },
   { href: '/admin/jobs', label: 'Jobs', icon: <Briefcase size={17} /> },
+  { href: '/admin/assistance-requests', label: 'Assistance Requests', icon: <ClipboardList size={17} /> },
   { href: '/admin/student-records', label: 'Student Records', icon: <ClipboardList size={17} /> },
   { href: '/admin/users', label: 'Users', icon: <Users size={17} /> },
   { href: '/admin/guidance', label: 'Guidance', icon: <FileText size={17} /> },
   { href: '/admin/messages', label: 'Inquiries', icon: <MessageSquare size={17} /> },
   { href: '/admin/announcements', label: 'Announcements', icon: <Bell size={17} /> },
+  { href: '/admin/hero-images', label: 'Hero Images', icon: <Home size={17} /> },
+  { href: '/admin/success-stories', label: 'Success Stories', icon: <User size={17} /> },
 ];
 
 export default function AdminLayout({ children, title }: { children: ReactNode; title: string }) {
@@ -25,6 +28,7 @@ export default function AdminLayout({ children, title }: { children: ReactNode; 
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const isActive = (item: typeof navItems[0]) =>
     item.exact ? location.pathname === item.href : location.pathname === item.href;
@@ -60,19 +64,6 @@ export default function AdminLayout({ children, title }: { children: ReactNode; 
           <button onClick={closeMobileMenu} className="md:hidden p-1 text-gray-500">
             <X size={20} />
           </button>
-        </div>
-
-        {/* Admin info */}
-        <div className="p-4 border-b border-gray-200 dark:border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-black font-bold text-sm shrink-0">
-              {user?.name.charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user?.name}</p>
-              <p className="text-xs text-cyan-400 font-medium">⚡ Administrator</p>
-            </div>
-          </div>
         </div>
 
         {/* Nav */}
@@ -120,6 +111,56 @@ export default function AdminLayout({ children, title }: { children: ReactNode; 
           {/* Right actions */}
           <div className="flex items-center gap-3">
             <ThemeToggle />
+
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen((prev) => !prev)}
+                className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-white/10 hover:border-cyan-500/30 transition-all duration-200"
+              >
+                {user?.avatar ? (
+                  <img src={user.avatar} alt={user.name} className="w-9 h-9 rounded-full object-cover" />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-black font-bold text-sm">
+                    {user?.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="hidden sm:flex flex-col items-start truncate">
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user?.name}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Administrator</span>
+                </div>
+              </button>
+
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-3 w-56 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 shadow-xl shadow-gray-200/50 dark:shadow-black/50 z-50">
+                  <div className="p-4 border-b border-gray-200 dark:border-white/10">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user?.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+                    <span className="text-xs inline-flex items-center px-2 py-1 mt-2 rounded-full bg-cyan-500/10 text-cyan-700 dark:text-cyan-300">
+                      ⚡ Administrator
+                    </span>
+                  </div>
+                  <div className="p-2">
+                    <Link
+                      to="/admin/profile"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-all"
+                    >
+                      <User size={16} /> Profile
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        logout();
+                        navigate('/');
+                      }}
+                      className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all"
+                    >
+                      <LogOut size={16} /> Logout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

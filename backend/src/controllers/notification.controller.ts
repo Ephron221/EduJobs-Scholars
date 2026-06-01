@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import Notification from '../models/Notification';
 import { AuthRequest } from '../middleware/auth';
+import mongoose from 'mongoose';
 
 export const getNotifications = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -14,6 +15,7 @@ export const getNotifications = async (req: AuthRequest, res: Response): Promise
         ? n.readBy.some((id) => id.toString() === userId?.toString())
         : n.isRead,
     }));
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.json({ notifications: notificationsWithReadStatus });
   } catch (error) {
     res.status(500).json({ message: 'Failed to get notifications', error });
@@ -29,6 +31,7 @@ export const getUnreadCount = async (req: AuthRequest, res: Response): Promise<v
         { isGlobal: true, readBy: { $ne: userId } }
       ]
     });
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.json({ count });
   } catch (error) {
     res.status(500).json({ message: 'Failed to get unread count', error });
@@ -40,6 +43,10 @@ export const markAsRead = async (req: AuthRequest, res: Response): Promise<void>
     const userId = req.user?._id;
     const notification = await Notification.findById(req.params.id);
     if (!notification) { res.status(404).json({ message: 'Notification not found' }); return; }
+    if (!notification.isGlobal && notification.userId?.toString() !== userId?.toString()) {
+      res.status(403).json({ message: 'Access denied' });
+      return;
+    }
     if (notification.isGlobal) {
       if (!notification.readBy.some((id) => id.toString() === userId?.toString())) {
         notification.readBy.push(userId as never);
@@ -59,6 +66,10 @@ export const markAllAsRead = async (req: AuthRequest, res: Response): Promise<vo
   try {
     const userId = req.user?._id;
     await Notification.updateMany({ userId, isRead: false }, { isRead: true });
+    await Notification.updateMany(
+      { isGlobal: true, readBy: { $ne: userId } },
+      { $addToSet: { readBy: userId as mongoose.Types.ObjectId } }
+    );
     res.json({ message: 'All notifications marked as read' });
   } catch (error) {
     res.status(500).json({ message: 'Failed to mark all as read', error });

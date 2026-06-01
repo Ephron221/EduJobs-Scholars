@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Bookmark, ClipboardList, Bell, ArrowRight, GraduationCap, Briefcase, TrendingUp } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { applicationAPI } from '../../api';
-import StudentLayout from './StudentLayout';
+import StudentLayout from './JobseekerLayout';
 import StatusBadge from '../../components/StatusBadge';
 import Loader from '../../components/Loader';
 import { formatDistanceToNow } from 'date-fns';

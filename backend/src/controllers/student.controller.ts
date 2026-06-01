@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
+import path from 'path';
 import Student from '../models/Student';
+import { deleteUploadedFile } from '../utils/uploadPath';
 
 export const getStudents = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -78,6 +80,84 @@ export const deleteStudent = async (req: Request, res: Response): Promise<void> 
     res.json({ message: 'Student deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete student', error });
+  }
+};
+
+export const uploadStudentFiles = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const student = await Student.findById(req.params.id);
+    if (!student) { res.status(404).json({ message: 'Student not found' }); return; }
+
+    const files = req.files as Express.Multer.File[] | undefined;
+    if (!files || files.length === 0) {
+      res.status(400).json({ message: 'No files uploaded' });
+      return;
+    }
+
+    const category = req.body.category as 'nationalId' | 'passportPhoto' | 'diploma' | 'other' | undefined;
+    const allowedCategories = ['nationalId', 'passportPhoto', 'diploma', 'other'] as const;
+    const selectedCategory: 'nationalId' | 'passportPhoto' | 'diploma' | 'other' =
+      allowedCategories.includes(category as any) ? category! : 'other';
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+    const names = Array.isArray(req.body.names)
+      ? req.body.names
+      : req.body.names
+      ? [req.body.names]
+      : [];
+
+    const newDocuments = files.map((file, index) => {
+      const isPdf = file.mimetype === 'application/pdf' || path.extname(file.originalname).toLowerCase() === '.pdf';
+      const relativePath = isPdf ? `/uploads/documents/${file.filename}` : `/uploads/images/${file.filename}`;
+      return {
+        name: names[index] || file.originalname,
+        url: `${baseUrl}${relativePath}`,
+        category: selectedCategory,
+        uploadedAt: new Date(),
+      };
+    });
+
+    student.documents.push(...newDocuments);
+    await student.save();
+
+    res.json({ message: 'Files uploaded successfully', documents: newDocuments, student });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to upload student files', error });
+  }
+};
+
+export const deleteStudentFile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { fileUrl } = req.body as { fileUrl: string };
+    const student = await Student.findById(req.params.id);
+    if (!student) { res.status(404).json({ message: 'Student not found' }); return; }
+
+    student.documents = student.documents.filter((doc) => doc.url !== fileUrl);
+    await student.save();
+
+    deleteUploadedFile(fileUrl);
+
+    res.json({ message: 'File deleted successfully', student });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to delete file', error });
+  }
+};
+
+export const renameStudentFile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { fileUrl, name } = req.body as { fileUrl: string; name: string };
+    const student = await Student.findById(req.params.id);
+    if (!student) { res.status(404).json({ message: 'Student not found' }); return; }
+
+    const document = student.documents.find((doc) => doc.url === fileUrl);
+    if (!document) { res.status(404).json({ message: 'Document not found' }); return; }
+
+    document.name = name;
+    await student.save();
+
+    res.json({ message: 'Document renamed successfully', student });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to rename document', error });
   }
 };
 

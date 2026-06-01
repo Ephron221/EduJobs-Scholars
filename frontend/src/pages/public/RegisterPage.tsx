@@ -81,24 +81,16 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#030303] flex flex-col selection:bg-cyan-500/30">
       <Navbar />
-      <main className="flex-grow flex flex-col lg:flex-row relative">
+      <main className="flex-grow flex flex-col lg:flex-row relative pt-20">
         {/* Left Section - Hero/Info */}
-        <div className="hidden lg:flex lg:w-[45%] sticky top-0 h-screen bg-gray-50 dark:bg-zinc-950 items-center justify-center border-r border-gray-100 dark:border-zinc-900">
-          <div className="relative z-10 p-16 max-w-xl">
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="w-20 h-20 bg-gradient-to-tr from-cyan-400 to-blue-600 rounded-3xl flex items-center justify-center text-white text-3xl font-black shadow-2xl shadow-cyan-500/20 mb-12"
-            >
-              EJ
-            </motion.div>
-            
-            <h2 className="text-5xl font-black text-gray-900 dark:text-white mb-8 tracking-tight leading-tight">
+        <div className="hidden lg:flex lg:w-[45%] sticky top-20 h-[calc(100vh-5rem)] bg-gray-50 dark:bg-zinc-950 items-center justify-center border-r border-gray-100 dark:border-zinc-900">
+          <div className="relative z-10 w-full max-w-2xl px-16 py-10">
+            <h2 className="text-4xl xl:text-6xl font-black text-gray-900 dark:text-white mb-10 tracking-tight leading-[1.05]">
               Gateway to <br />
               <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent italic font-serif">Global Opportunities</span>
             </h2>
             
-            <div className="space-y-8">
+            <div className="space-y-7">
               {[
                 { icon: <GraduationCap />, title: "Scholarships", desc: "Access 150+ top universities globally" },
                 { icon: <Briefcase />, title: "Career Path", desc: "Discover 500+ premium graduate jobs" },
@@ -109,7 +101,7 @@ export default function RegisterPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 + (idx * 0.1) }}
-                  className="flex gap-6 group"
+                  className="flex gap-5 group"
                 >
                   <div className="w-12 h-12 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 flex items-center justify-center text-cyan-500 group-hover:scale-110 transition-transform duration-300 shadow-sm">
                     {item.icon}
@@ -122,7 +114,7 @@ export default function RegisterPage() {
               ))}
             </div>
 
-            <div className="mt-16 pt-16 border-t border-gray-100 dark:border-zinc-900">
+            <div className="mt-12 pt-10 border-t border-gray-100 dark:border-zinc-900">
               <div className="flex items-center gap-4 text-cyan-500 font-black tracking-widest text-xs uppercase">
                 <Sparkles size={16} /> Empowering Digital Generations
               </div>
@@ -134,7 +126,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Right Section - Form */}
-        <div className="w-full lg:w-[55%] flex items-center justify-center p-8 md:p-12 lg:p-24 overflow-y-auto">
+        <div className="w-full lg:w-[55%] min-h-[calc(100vh-5rem)] flex items-center justify-center p-8 md:p-12 lg:p-20 overflow-y-auto">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

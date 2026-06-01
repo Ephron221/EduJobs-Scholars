@@ -4,6 +4,7 @@ export interface IStudentApplication extends Document {
   studentId: mongoose.Types.ObjectId;
   studentName: string;
   studentEmail: string;
+  studentPhone: string;
   opportunityId: mongoose.Types.ObjectId;
   opportunityType: 'university' | 'job';
   opportunityName: string;
@@ -17,6 +18,7 @@ const StudentApplicationSchema = new Schema<IStudentApplication>({
   studentId: { type: Schema.Types.ObjectId, ref: 'User', required: false },
   studentName: { type: String, required: true },
   studentEmail: { type: String, required: true },
+  studentPhone: { type: String, default: '' },
   opportunityId: { type: Schema.Types.ObjectId, required: false },
   opportunityType: { type: String, enum: ['university', 'job'], required: true },
   opportunityName: { type: String, required: true },

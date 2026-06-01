@@ -50,12 +50,14 @@ export default function Navbar() {
         : 'bg-transparent'
     )}>
       <div className="page-container">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-9 h-9 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg flex items-center justify-center text-black font-black text-sm group-hover:shadow-lg group-hover:shadow-cyan-500/40 transition-all duration-300">
-              EJ
-            </div>
+          <Link to="/" className="flex items-center gap-3 group">
+            <img
+              src="/logo.png"
+              alt="EduJobs Scholars"
+              className="h-16 w-16 object-contain transition-transform duration-300 group-hover:scale-105"
+            />
             <span className="font-bold text-lg hidden lg:block">
               <span className="text-gray-900 dark:text-white">EduJobs</span>
               <span className="gradient-text"> Scholars</span>
@@ -110,9 +112,17 @@ export default function Navbar() {
                     className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-100 dark:bg-white dark:bg-gray-900/5 border border-gray-200 dark:border-white/10 hover:border-cyan-500/30 transition-all duration-200"
                     id="user-menu-btn"
                   >
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-black font-bold text-xs">
-                      {user?.name.charAt(0).toUpperCase()}
-                    </div>
+                    {user?.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="w-7 h-7 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-black font-bold text-xs">
+                        {user?.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden sm:block max-w-24 truncate">{user?.name}</span>
                   </button>
                   {userMenuOpen && (

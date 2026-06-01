@@ -31,11 +31,11 @@ const docStorage = multer.diskStorage({
 });
 
 const imageFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowed = /jpeg|jpg|png|gif|webp|svg/i;
+  const allowed = /jpeg|jpg|png|gif|webp/i;
   if (allowed.test(path.extname(file.originalname)) && allowed.test(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed (jpg, png, gif, webp, svg)'));
+    cb(new Error('Only image files are allowed (jpg, png, gif, webp)'));
   }
 };
 
@@ -47,15 +47,14 @@ const docFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilt
   }
 };
 
-// Mixed filter: images OR PDFs
 const mixedFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const imageAllowed = /jpeg|jpg|png|gif|webp|svg/i;
-  const isPdf = path.extname(file.originalname).toLowerCase() === '.pdf' || file.mimetype === 'application/pdf';
+  const imageAllowed = /jpeg|jpg|png|gif|webp/i;
+  const isPdf = path.extname(file.originalname).toLowerCase() === '.pdf' && file.mimetype === 'application/pdf';
   const isImage = imageAllowed.test(path.extname(file.originalname)) && imageAllowed.test(file.mimetype);
   if (isPdf || isImage) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files (jpg, png, gif, webp, svg) or PDF files are allowed'));
+    cb(new Error('Only image files (jpg, png, gif, webp) or PDF files are allowed'));
   }
 };
 

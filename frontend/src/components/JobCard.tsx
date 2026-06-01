@@ -1,7 +1,22 @@
-import { MapPin, Clock, Building2, Bookmark, BookmarkCheck, ExternalLink } from 'lucide-react';
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  Bookmark,
+  BookmarkCheck,
+  Building2,
+  Calendar,
+  CheckCircle,
+  ExternalLink,
+  FileText,
+  HelpCircle,
+  MapPin,
+  Send,
+  UserRound,
+  X,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '../contexts/AuthContext';
-import { userAPI } from '../api';
+import { applicationAPI, userAPI } from '../api';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
 
@@ -11,32 +26,112 @@ interface Job {
   company: string;
   type: 'job' | 'internship' | 'volunteering' | 'government';
   requirements: string;
+  description?: string;
   deadline: string;
   link: string;
   location: string;
   salary: string;
   featured: boolean;
+  postedAt?: string;
   images?: string[];
   documents?: { name: string; url: string; uploadedAt: string }[];
 }
 
-interface Props { job: Job; isSaved?: boolean; onSaveToggle?: () => void; }
+interface Props {
+  job: Job;
+  isSaved?: boolean;
+  onSaveToggle?: () => void;
+}
 
 const typeConfig = {
-  job: { label: 'Full-time', color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' },
-  internship: { label: 'Internship', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
-  volunteering: { label: 'Volunteering', color: 'bg-green-500/20 text-green-300 border-green-500/30' },
-  government: { label: 'Government', color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
+  job: { label: 'Full-time', color: 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border-cyan-500/30' },
+  internship: { label: 'Internship', color: 'bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30' },
+  volunteering: { label: 'Volunteering', color: 'bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30' },
+  government: { label: 'Government', color: 'bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/30' },
 };
+
+const initialsFrom = (value: string) => value.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+
+const InfoRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
+  <div className="flex items-start justify-between gap-4">
+    <span className="text-sm text-gray-500 dark:text-gray-400">{label}</span>
+    <span className="max-w-[62%] text-right text-sm font-semibold text-gray-900 dark:text-white">{value}</span>
+  </div>
+);
+
+const InfoSection = ({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
+  <div>
+    <h4 className="mb-3 flex items-center gap-2 border-b border-gray-200 pb-2 text-sm font-bold text-gray-900 dark:border-white/10 dark:text-white">
+      <span className="text-cyan-500">{icon}</span>
+      {title}
+    </h4>
+    <div className="space-y-3">{children}</div>
+  </div>
+);
 
 export default function JobCard({ job, isSaved, onSaveToggle }: Props) {
   const { isAuthenticated } = useAuth();
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [helpStep, setHelpStep] = useState<'eligibility' | 'form'>('eligibility');
+  const [assistanceForm, setAssistanceForm] = useState({ fullName: '', phone: '', email: '' });
   const isExpired = new Date(job.deadline) < new Date();
   const type = typeConfig[job.type] || typeConfig.job;
+  const applicationUrl = job.documents?.[0]?.url || job.link;
+  const overview = job.description || job.requirements;
+  const postedDate = job.postedAt ? format(new Date(job.postedAt), 'dd MMM yyyy') : 'Recently posted';
+  const avatarText = initialsFrom(job.company || job.title) || 'OP';
+
+  const openHelpModal = () => {
+    setHelpStep('eligibility');
+    setShowHelpModal(true);
+  };
+
+  const closeHelpModal = () => {
+    setShowHelpModal(false);
+    setHelpStep('eligibility');
+  };
+
+  const handleAssistanceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(assistanceForm.email.trim());
+    const phoneOk = /^\+\d{7,15}$/.test(assistanceForm.phone.trim());
+
+    if (!emailOk) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    if (!phoneOk) {
+      toast.error('Phone number must start with country code, for example +250786823101');
+      return;
+    }
+
+    try {
+      await applicationAPI.createPublic({
+        studentName: assistanceForm.fullName.trim(),
+        studentEmail: assistanceForm.email.trim(),
+        studentPhone: assistanceForm.phone.trim(),
+        opportunityId: job._id,
+        opportunityType: 'job',
+        opportunityName: job.title,
+        notes: `Assistance request for ${job.title} at ${job.company}`,
+      });
+      toast.success('Application assistance request submitted!');
+      setAssistanceForm({ fullName: '', phone: '', email: '' });
+      closeHelpModal();
+    } catch {
+      toast.error('Failed to submit assistance request');
+    }
+  };
 
   const handleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!isAuthenticated) { toast.error('Please login to save opportunities'); return; }
+    if (!isAuthenticated) {
+      toast.error('Please login to save opportunities');
+      return;
+    }
+
     try {
       if (isSaved) {
         await userAPI.unsaveOpportunity(job._id);
@@ -46,106 +141,347 @@ export default function JobCard({ job, isSaved, onSaveToggle }: Props) {
         toast.success('Job saved!');
       }
       onSaveToggle?.();
-    } catch { toast.error('Failed to update saved list'); }
+    } catch {
+      toast.error('Failed to update saved list');
+    }
   };
 
   return (
-    <div className={clsx('glass-card-hover group relative flex flex-col', job.featured && 'border-cyan-500/30')}>
+    <div className={clsx('glass-card-hover group relative flex flex-col overflow-hidden rounded-2xl', job.featured && 'border-cyan-500/30')}>
       {job.featured && (
-        <div className="absolute top-3 left-3 bg-gradient-to-r from-cyan-500 to-cyan-400 text-black text-xs font-bold px-2 py-0.5 rounded-full">
-          ⭐ Featured
+        <div className="absolute left-3 top-3 z-20 rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400 px-2 py-0.5 text-xs font-bold text-black">
+          Featured
         </div>
       )}
+
       {isExpired && (
-        <div className="absolute top-3 right-3 bg-red-500/20 text-red-400 text-xs font-semibold px-2 py-0.5 rounded-full border border-red-500/30">
+        <div className="absolute right-3 top-3 z-20 rounded-full border border-red-500/30 bg-red-500/20 px-2 py-0.5 text-xs font-semibold text-red-400">
           Expired
         </div>
       )}
 
-      {/* Cover Image if available */}
-      {job.images && job.images.length > 0 && (
-        <div className="h-28 w-full overflow-hidden relative">
-          <img src={job.images[0]} alt={job.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent"></div>
-        </div>
-      )}
-
-      {/* Docs Badge */}
       {job.documents && job.documents.length > 0 && (
-        <div className="absolute top-3 right-12 z-10">
-          <span className="bg-gray-900/60 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded border border-white/10 flex items-center gap-1">
-            <Bookmark size={10} className="text-cyan-400"/> {job.documents.length} Doc(s)
+        <div className="absolute right-12 top-3 z-20">
+          <span className="flex items-center gap-1 rounded border border-white/10 bg-gray-900/60 px-2 py-1 text-[10px] text-white backdrop-blur-md">
+            <Bookmark size={10} className="text-cyan-400" /> {job.documents.length} Doc(s)
           </span>
         </div>
       )}
 
-      <div className={clsx("p-5", job.images && job.images.length > 0 ? "pt-3" : "")}>
-        {/* Company icon & Title */}
-        <div className="flex items-start gap-3 mb-3 relative">
-          {!(job.images && job.images.length > 0) && (
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-200 dark:border-white/10 flex items-center justify-center text-cyan-400 font-black shrink-0 shadow-lg">
-              {job.company.charAt(0).toUpperCase()}
+      <div className="relative h-44 w-full overflow-hidden bg-gradient-to-br from-cyan-50 to-gray-100 dark:from-cyan-950/40 dark:to-gray-950">
+        {job.images && job.images.length > 0 ? (
+          <img
+            src={job.images[0]}
+            alt={job.title}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center p-6 text-center">
+            <div>
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-500/20 bg-cyan-500/10 text-xl font-black text-cyan-600 dark:text-cyan-300">
+                {job.company.charAt(0).toUpperCase()}
+              </div>
+              <p className="text-sm font-bold uppercase tracking-wide text-gray-700 dark:text-gray-200">{job.company}</p>
             </div>
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+        <button
+          type="button"
+          onClick={handleSave}
+          className={clsx(
+            'absolute bottom-3 right-3 z-10 rounded-lg p-2 text-white backdrop-blur-md transition-all',
+            isSaved ? 'bg-cyan-500 text-black' : 'bg-black/45 hover:bg-cyan-500 hover:text-black',
           )}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-gray-900 dark:text-white text-base leading-tight group-hover:text-cyan-300 transition-colors line-clamp-2">
+          aria-label={isSaved ? 'Remove saved job' : 'Save job'}
+        >
+          {isSaved ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
+        </button>
+      </div>
+
+      <div className="flex flex-1 flex-col p-5">
+        <div className="mb-3 flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <h3 className="line-clamp-2 text-xl font-bold leading-tight text-gray-900 transition-colors group-hover:text-cyan-600 dark:text-white dark:group-hover:text-cyan-300">
               {job.title}
             </h3>
-            <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400 text-xs mt-1">
-              <Building2 size={12} className="text-cyan-600" />
+            <div className="mt-1 flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+              <Building2 size={12} className="text-cyan-600 dark:text-cyan-400" />
               <span className="font-medium">{job.company}</span>
             </div>
           </div>
-          
-          {job.images && job.images.length > 0 && (
-             <div className="absolute -top-10 right-0 w-10 h-10 rounded-xl bg-white dark:bg-gray-800 border border-white/20 p-0.5 flex items-center justify-center shrink-0 shadow-xl z-10">
-                <span className="text-cyan-600 dark:text-cyan-400 font-black text-xs">{job.company.charAt(0).toUpperCase()}</span>
-             </div>
-          )}
-          <button onClick={handleSave} className={clsx(
-            'absolute top-3 right-3 p-1.5 rounded-lg transition-all z-10 shrink-0',
-            isSaved ? 'bg-cyan-500/20 text-cyan-400' : 'bg-black/40 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-cyan-400'
-          )}>
-            {isSaved ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
-          </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <span className={clsx('text-xs px-2.5 py-1 rounded-full border font-medium', type.color)}>
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className={clsx('rounded-full border px-2.5 py-1 text-xs font-medium', type.color)}>
             {type.label}
           </span>
           <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-            <MapPin size={11} className="text-cyan-600" /> {job.location}
+            <MapPin size={11} className="text-cyan-600 dark:text-cyan-400" /> {job.location}
           </span>
           {job.salary && job.salary !== 'Not specified' && (
-            <span className="text-xs text-green-400 font-medium">💰 {job.salary}</span>
+            <span className="text-xs font-medium text-green-600 dark:text-green-400">{job.salary}</span>
           )}
         </div>
 
-        <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2">{job.requirements}</p>
+        <p className="mb-5 line-clamp-3 flex-1 text-sm leading-6 text-gray-600 dark:text-gray-400">
+          {job.requirements}
+        </p>
+
+        <div className="mt-auto flex flex-col gap-4 border-t border-gray-100 pt-4 dark:border-white/5">
+          <div className={clsx('flex items-center gap-2 text-sm', isExpired ? 'text-red-400' : 'text-gray-600 dark:text-gray-400')}>
+            <Calendar size={17} />
+            {format(new Date(job.deadline), 'yyyy-MM-dd')}
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={openHelpModal}
+              disabled={isExpired}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-cyan-700 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500 dark:bg-cyan-500 dark:text-black dark:hover:bg-cyan-400 dark:disabled:bg-gray-700 dark:disabled:text-gray-500"
+            >
+              <HelpCircle size={16} /> Ask Help
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowDetailsModal(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-cyan-600 px-4 py-3 text-sm font-semibold text-gray-900 transition-all hover:bg-cyan-50 dark:border-cyan-400 dark:text-white dark:hover:bg-cyan-500/10"
+            >
+              Read More <ExternalLink size={16} />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Footer */}
-      <div className="px-5 pb-5 pt-2 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
-        <div className={clsx('flex items-center gap-1 text-xs', isExpired ? 'text-red-400' : 'text-gray-500 dark:text-gray-400')}>
-          <Clock size={11} />
-          {isExpired ? 'Expired ' : 'Deadline: '}
-          {format(new Date(job.deadline), 'MMM dd, yyyy')}
-        </div>
-        <a
-          href={job.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className={clsx('flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all',
-            isExpired
-              ? 'bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed'
-              : 'btn-primary'
-          )}
-        >
-          Apply <ExternalLink size={11} />
-        </a>
-      </div>
+      {showHelpModal && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={closeHelpModal} />
+          <div className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-white shadow-2xl shadow-black dark:bg-[#111214]">
+            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-5 dark:border-white/10">
+              <h2 className="text-2xl font-black text-gray-900 dark:text-white">
+                {helpStep === 'eligibility' ? 'Eligibility Check' : 'Application Help'}
+              </h2>
+              <button
+                type="button"
+                onClick={closeHelpModal}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-white"
+                aria-label="Close eligibility dialog"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {helpStep === 'eligibility' ? (
+              <>
+                <div className="overflow-y-auto px-6 py-7">
+                  <div className="mb-8 flex items-center gap-5">
+                    <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-cyan-500 text-3xl font-black text-black shadow-lg shadow-cyan-500/20">
+                      {avatarText}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-2xl font-black text-gray-900 dark:text-white sm:text-3xl">{job.title}</h3>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span className="rounded-lg bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-600 dark:bg-white/10 dark:text-gray-300">{job.company}</span>
+                        <span className={clsx('rounded-full border px-3 py-1 text-sm font-bold', type.color)}>{type.label}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <InfoSection icon={<CheckCircle size={15} />} title="Eligibility">
+                      <InfoRow label="Status" value="Confirm before requesting help" />
+                      <InfoRow label="Deadline" value={format(new Date(job.deadline), 'yyyy-MM-dd')} />
+                      <InfoRow label="Location" value={job.location} />
+                    </InfoSection>
+                    <InfoSection icon={<FileText size={15} />} title="Application Note">
+                      <p className="text-sm leading-7 text-gray-600 dark:text-gray-300">
+                        Please make sure you meet all the requirements before proceeding with the application assistance request.
+                      </p>
+                    </InfoSection>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 border-t border-gray-200 bg-gray-50 px-6 py-5 dark:border-white/10 dark:bg-[#15171a] sm:grid-cols-3">
+                  <button
+                    type="button"
+                    onClick={() => setHelpStep('form')}
+                    className="btn-primary inline-flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle size={22} /> Proceed
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowHelpModal(false);
+                      setShowDetailsModal(true);
+                    }}
+                    className="btn-secondary inline-flex items-center justify-center gap-2"
+                  >
+                    <FileText size={21} /> Read Application
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeHelpModal}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-200 px-5 py-3 text-base font-bold text-gray-600 transition-all hover:bg-gray-300 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/15"
+                  >
+                    <X size={21} /> Close
+                  </button>
+                </div>
+              </>
+            ) : (
+              <form onSubmit={handleAssistanceSubmit} className="space-y-6 overflow-y-auto px-6 py-7">
+                <div className="flex items-center gap-5">
+                  <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-cyan-500 text-3xl font-black text-black shadow-lg shadow-cyan-500/20">
+                    <UserRound size={38} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-gray-900 dark:text-white">Application Assistance Form</h3>
+                    <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-400">
+                      Fill in your personal information so the team can contact you about this opportunity.
+                    </p>
+                  </div>
+                </div>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <InfoSection icon={<UserRound size={15} />} title="Personal Information">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Full Name *
+                      <input
+                        type="text"
+                        value={assistanceForm.fullName}
+                        onChange={(e) => setAssistanceForm({ ...assistanceForm, fullName: e.target.value })}
+                        className="input-field mt-2"
+                        placeholder="Esron TUYISHIMIRE"
+                        required
+                      />
+                    </label>
+                  </InfoSection>
+                  <InfoSection icon={<FileText size={15} />} title="Opportunity">
+                    <InfoRow label="Title" value={job.title} />
+                    <InfoRow label="Company" value={job.company} />
+                    <InfoRow label="Type" value={type.label} />
+                  </InfoSection>
+                </div>
+                <InfoSection icon={<HelpCircle size={15} />} title="Contact Info">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-300">Phone Number *</label>
+                    <input
+                      type="tel"
+                      value={assistanceForm.phone}
+                      onChange={(e) => setAssistanceForm({ ...assistanceForm, phone: e.target.value })}
+                      className="input-field"
+                      placeholder="+250786823101"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-300">Email *</label>
+                    <input
+                      type="email"
+                      value={assistanceForm.email}
+                      onChange={(e) => setAssistanceForm({ ...assistanceForm, email: e.target.value })}
+                      className="input-field"
+                      placeholder="esron@example.com"
+                      required
+                    />
+                  </div>
+                  </div>
+                </InfoSection>
+                <div className="grid gap-3 border-t border-gray-200 pt-5 dark:border-white/10 sm:grid-cols-2">
+                  <button type="button" onClick={() => setHelpStep('eligibility')} className="btn-secondary justify-center">
+                    Back
+                  </button>
+                  <button type="submit" className="btn-primary inline-flex items-center justify-center gap-2">
+                    <Send size={18} /> Submit
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      {showDetailsModal && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowDetailsModal(false)} />
+          <div className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-white shadow-2xl shadow-black dark:bg-[#111214]">
+            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-5 dark:border-white/10">
+              <h2 className="text-2xl font-black text-gray-900 dark:text-white">Opportunity Profile</h2>
+              <button
+                type="button"
+                onClick={() => setShowDetailsModal(false)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-white"
+                aria-label="Close opportunity details"
+              >
+                <X size={21} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto px-6 py-7">
+              <div className="mb-8 flex items-center gap-5">
+                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-cyan-500 text-3xl font-black text-black shadow-lg shadow-cyan-500/20">
+                  {avatarText}
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-2xl font-black text-gray-900 dark:text-white sm:text-3xl">{job.title}</h3>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="rounded-lg bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-600 dark:bg-white/10 dark:text-gray-300">{job.company}</span>
+                    <span className={clsx('rounded-full border px-3 py-1 text-sm font-bold', type.color)}>{type.label}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <InfoSection icon={<FileText size={15} />} title="Opportunity Detail">
+                  <InfoRow label="Posted" value={postedDate} />
+                  <InfoRow label="Deadline" value={format(new Date(job.deadline), 'yyyy-MM-dd')} />
+                  <InfoRow label="Location" value={job.location} />
+                  <InfoRow label="Salary" value={job.salary || 'Not specified'} />
+                </InfoSection>
+                <InfoSection icon={<HelpCircle size={15} />} title="Contact Info">
+                  <InfoRow label="Phone" value="0786823101" />
+                  <InfoRow label="Company" value={job.company} />
+                  <InfoRow label="Documents" value={`${job.documents?.length || 0} available`} />
+                </InfoSection>
+                <div className="md:col-span-2">
+                  <InfoSection icon={<CheckCircle size={15} />} title="About this Opportunity">
+                    <p className="whitespace-pre-line text-sm leading-7 text-gray-600 dark:text-gray-300">{overview}</p>
+                  </InfoSection>
+                </div>
+                <div className="md:col-span-2">
+                  <InfoSection icon={<FileText size={15} />} title="Qualification Criteria">
+                    <p className="whitespace-pre-line text-sm leading-7 text-gray-600 dark:text-gray-300">{job.requirements}</p>
+                  </InfoSection>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 border-t border-gray-200 bg-gray-50 px-6 py-5 dark:border-white/10 dark:bg-[#15171a] sm:grid-cols-2">
+              <a
+                href={job.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary inline-flex items-center justify-center gap-2"
+              >
+                Self Apply <ExternalLink size={18} />
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDetailsModal(false);
+                  openHelpModal();
+                }}
+                className="btn-secondary inline-flex items-center justify-center gap-2"
+              >
+                <HelpCircle size={18} /> Ask Help
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }

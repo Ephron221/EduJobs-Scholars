@@ -8,12 +8,18 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import clsx from 'clsx';
 
-interface Program { _id: string; name: string; fieldOfStudy: string; duration: string; level: string; deadline: string; requirements: string; applicationLink: string; tuitionFee: string; universityId: {_id: string; name: string} | string; }
+interface Program { _id: string; name: string; fieldOfStudy: string; duration: string; level: string; fundingType: string; deadline: string; requirements: string; applicationLink: string; tuitionFee: string; universityId: {_id: string; name: string} | string; }
 interface University { _id: string; name: string; }
 
 const FIELDS = ['Engineering', 'Medicine', 'Business', 'Law', 'Arts', 'Science', 'Agriculture', 'Education', 'Technology', 'Social Sciences'];
 const LEVELS = ['undergraduate', 'postgraduate', 'diploma', 'certificate'];
-const EMPTY = { universityId: '', name: '', fieldOfStudy: '', level: 'undergraduate', requirements: '', deadline: '', applicationLink: '', duration: '', tuitionFee: '' };
+const FUNDING_TYPES = [
+  { value: 'scholarship', label: 'Scholarship' },
+  { value: 'partial_scholarship', label: 'Partial Scholarship' },
+  { value: 'study_loan', label: 'Study Loan' },
+  { value: 'self_sponsored', label: 'Self-sponsored' },
+];
+const EMPTY = { universityId: '', name: '', fieldOfStudy: '', level: 'undergraduate', fundingType: 'self_sponsored', requirements: '', deadline: '', applicationLink: '', duration: '', tuitionFee: '' };
 
 export default function ManagePrograms() {
   const [programs, setPrograms] = useState<Program[]>([]);
@@ -50,7 +56,7 @@ export default function ManagePrograms() {
   const openCreate = () => { setForm(EMPTY); setEditItem(null); setModalOpen(true); };
   const openEdit = (p: Program) => {
     const uniId = typeof p.universityId === 'object' ? p.universityId._id : p.universityId;
-    setForm({ universityId: uniId, name: p.name, fieldOfStudy: p.fieldOfStudy, level: p.level, requirements: p.requirements, deadline: p.deadline ? format(new Date(p.deadline), 'yyyy-MM-dd') : '', applicationLink: p.applicationLink, duration: p.duration, tuitionFee: p.tuitionFee });
+    setForm({ universityId: uniId, name: p.name, fieldOfStudy: p.fieldOfStudy, level: p.level, fundingType: p.fundingType || 'self_sponsored', requirements: p.requirements, deadline: p.deadline ? format(new Date(p.deadline), 'yyyy-MM-dd') : '', applicationLink: p.applicationLink, duration: p.duration, tuitionFee: p.tuitionFee });
     setEditItem(p); setModalOpen(true);
   };
 
@@ -100,15 +106,17 @@ export default function ManagePrograms() {
                   <th className="table-header">University</th>
                   <th className="table-header">Field</th>
                   <th className="table-header">Level</th>
+                  <th className="table-header">Funding</th>
                   <th className="table-header">Deadline</th>
                   <th className="table-header text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {programs.length === 0 ? (
-                  <tr><td colSpan={6} className="py-16 text-center text-gray-500 dark:text-gray-400">No programs found</td></tr>
+                  <tr><td colSpan={7} className="py-16 text-center text-gray-500 dark:text-gray-400">No programs found</td></tr>
                 ) : programs.map((p) => {
                   const expired = isExpired(p.deadline);
+                  const fundingLabel = FUNDING_TYPES.find((t) => t.value === p.fundingType)?.label || 'Self-sponsored';
                   const uniName = typeof p.universityId === 'object' ? p.universityId.name : '—';
                   return (
                     <tr key={p._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors border-b border-transparent last:border-0">
@@ -116,6 +124,7 @@ export default function ManagePrograms() {
                       <td className="table-cell text-gray-600 dark:text-gray-400 text-xs">{uniName}</td>
                       <td className="table-cell"><span className="text-xs bg-cyan-500/10 text-cyan-300 px-2 py-0.5 rounded">{p.fieldOfStudy}</span></td>
                       <td className="table-cell text-gray-600 dark:text-gray-400 capitalize text-xs">{p.level}</td>
+                      <td className="table-cell"><span className="text-xs bg-blue-500/10 text-blue-300 px-2 py-0.5 rounded">{fundingLabel}</span></td>
                       <td className={clsx('table-cell text-xs', expired ? 'text-red-400' : 'text-gray-600 dark:text-gray-400')}>
                         <span className="flex items-center gap-1"><Calendar size={11} />
                           {p.deadline ? format(new Date(p.deadline), 'MMM dd, yyyy') : '—'}
@@ -167,6 +176,12 @@ export default function ManagePrograms() {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Duration *</label>
               <input type="text" value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} className="input-field" placeholder="e.g. 4 years" required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Funding Type *</label>
+              <select value={form.fundingType} onChange={(e) => setForm({ ...form, fundingType: e.target.value })} className="select-field">
+                {FUNDING_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Application Deadline *</label>

@@ -1,16 +1,21 @@
 import { Request, Response } from 'express';
 import path from 'path';
-import fs from 'fs';
 import University from '../models/University';
+import Program from '../models/Program';
 import { AuthRequest } from '../middleware/auth';
+import { deleteUploadedFile } from '../utils/uploadPath';
 
 export const getUniversities = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { search, country, featured, page = 1, limit = 12 } = req.query;
+    const { search, country, featured, fundingType, page = 1, limit = 12 } = req.query;
     const query: Record<string, unknown> = {};
     if (search) query.$text = { $search: search as string };
     if (country) query.country = { $regex: country as string, $options: 'i' };
     if (featured === 'true') query.featured = true;
+    if (typeof fundingType === 'string' && fundingType) {
+      const universityIds = await Program.distinct('universityId', { fundingType });
+      query._id = { $in: universityIds };
+    }
     const skip = (Number(page) - 1) * Number(limit);
     const [universities, total] = await Promise.all([
       University.find(query).sort({ featured: -1, createdAt: -1 }).skip(skip).limit(Number(limit)),
@@ -119,12 +124,7 @@ export const deleteUniversityFile = async (req: AuthRequest, res: Response): Pro
     }
     await university.save();
 
-    // Delete physical file
-    try {
-      const urlPath = new URL(fileUrl).pathname;
-      const filePath = path.join(process.cwd(), urlPath);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    } catch { /* ignore if file doesn't exist */ }
+    deleteUploadedFile(fileUrl);
 
     res.json({ message: 'File deleted successfully' });
   } catch (error) {

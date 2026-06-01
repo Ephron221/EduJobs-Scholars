@@ -191,6 +191,127 @@
   .sidebar-item-active {
     @apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-black bg-cyan-400 font-semibold text-sm;
   }
+
+  .hero-service-orbit {
+    position: relative;
+    --orbit-radius: 210px;
+    width: min(82vw, 520px);
+    aspect-ratio: 1;
+    border-radius: 9999px;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(circle at center, rgba(255, 255, 255, 0.08) 0 42%, transparent 43%),
+      rgba(6, 182, 212, 0.08);
+    border: 1px solid rgba(6, 182, 212, 0.34);
+    box-shadow:
+      inset 0 0 0 14px rgba(6, 182, 212, 0.05),
+      0 34px 90px rgba(6, 182, 212, 0.18);
+  }
+
+  .hero-service-orbit::before,
+  .hero-service-orbit::after {
+    content: '';
+    position: absolute;
+    inset: 18px;
+    border-radius: inherit;
+    border: 1px solid rgba(6, 182, 212, 0.28);
+    pointer-events: none;
+  }
+
+  .hero-service-orbit::after {
+    inset: -18px;
+    border-color: rgba(6, 182, 212, 0.16);
+    border-style: dashed;
+  }
+
+  .hero-service-center {
+    position: relative;
+    z-index: 2;
+    width: 44%;
+    aspect-ratio: 1;
+    border-radius: 9999px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+    background: #ffffff;
+    box-shadow: 0 22px 50px rgba(6, 182, 212, 0.18);
+  }
+
+  .hero-service-path {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    animation: serviceOrbit 18s linear infinite;
+  }
+
+  .hero-service-node {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 120px;
+    height: 120px;
+    margin: -60px 0 0 -60px;
+    border-radius: 9999px;
+    display: grid;
+    place-items: center;
+    background: #ffffff;
+    color: #0891b2;
+    box-shadow: 0 14px 34px rgba(6, 182, 212, 0.24);
+  }
+
+  .hero-service-node-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    border: 6px solid rgba(6, 182, 212, 0.14);
+    animation: serviceOrbitReverse 18s linear infinite;
+  }
+
+  .hero-service-node span {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #1f2f58;
+  }
+
+  .hero-service-universities {
+    transform: rotate(18deg) translateX(var(--orbit-radius)) rotate(-18deg);
+  }
+
+  .hero-service-guidance {
+    transform: rotate(146deg) translateX(var(--orbit-radius)) rotate(-146deg);
+  }
+
+  .hero-service-jobs {
+    transform: rotate(270deg) translateX(var(--orbit-radius)) rotate(-270deg);
+  }
+
+  .hero-type-cursor {
+    display: inline-block;
+    width: 0.08em;
+    height: 0.86em;
+    margin-left: 0.12em;
+    transform: translateY(0.1em);
+    background: currentColor;
+    animation: typeCursorBlink 0.8s steps(2, start) infinite;
+  }
+
+  .hero-type-highlight {
+    display: inline;
+    padding: 0.02em 0.08em 0.08em;
+    background: linear-gradient(90deg, rgba(6, 182, 212, 0.24), rgba(34, 211, 238, 0.14));
+    color: inherit;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
 }
 
 @layer utilities {
@@ -202,4 +323,49 @@
   .animation-delay-200 { animation-delay: 0.2s; }
   .animation-delay-300 { animation-delay: 0.3s; }
   .animation-delay-500 { animation-delay: 0.5s; }
+}
+
+@keyframes serviceOrbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes serviceOrbitReverse {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes typeCursorBlink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-service-orbit {
+    --orbit-radius: 135px;
+    width: min(86vw, 360px);
+  }
+
+  .hero-service-center {
+    width: 52%;
+    padding: 1.25rem;
+  }
+
+  .hero-service-node {
+    width: 88px;
+    height: 88px;
+    margin: -44px 0 0 -44px;
+  }
+
+  .hero-service-node svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .hero-service-node span {
+    font-size: 0.65rem;
+  }
 }

@@ -5,11 +5,15 @@ import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 import sendEmail from '../utils/sendEmail';
 import { OAuth2Client } from 'google-auth-library';
+import { getJwtSecret } from '../config/env';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+const generateOtp = (): string => crypto.randomInt(100000, 1000000).toString();
+const hashOtp = (otp: string): string => crypto.createHash('sha256').update(`${getJwtSecret()}:${otp}`).digest('hex');
+
 const generateToken = (id: string): string => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'secret', {
+  return jwt.sign({ id }, getJwtSecret(), {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   } as jwt.SignOptions);
 };
@@ -28,7 +32,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const assignedRole = allowedRoles.includes(role) ? role : 'student';
     
     // Generate verification code
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationCode = generateOtp();
     const verificationExpire = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     const user = await User.create({ 
@@ -36,7 +40,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       email, 
       password, 
       role: assignedRole, 
-      verificationCode, 
+      verificationCode: hashOtp(verificationCode),
       verificationExpire,
       isVerified: false 
     });
@@ -124,11 +128,18 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
 export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { name, email } = req.body;
+    const updateFields: { name?: string; email?: string; avatar?: string } = {};
+
+    if (name) updateFields.name = name;
+    if (email) updateFields.email = email;
+    if (req.file) updateFields.avatar = `/uploads/images/${req.file.filename}`;
+
     const user = await User.findByIdAndUpdate(
       req.user?._id,
-      { name, email },
+      updateFields,
       { new: true, runValidators: true }
     );
+
     res.json({ message: 'Profile updated successfully', user });
   } catch (error) {
     res.status(500).json({ message: 'Failed to update profile', error });
@@ -157,15 +168,13 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     const user = await User.findOne({ email });
 
     if (!user) {
-      res.status(404).json({ message: 'There is no user with that email' });
+      res.status(200).json({ message: 'If an account exists, a verification code has been sent.' });
       return;
     }
 
-    // Generate random 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = generateOtp();
 
-    // Set to resetPasswordToken field (as plain text or hashed, choosing plain for simplicity in OTP comparison)
-    user.resetPasswordToken = otp;
+    user.resetPasswordToken = hashOtp(otp);
 
     // Set expire
     user.resetPasswordExpire = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
@@ -203,7 +212,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
         html,
       });
 
-      res.status(200).json({ message: 'Email sent successfully' });
+      res.status(200).json({ message: 'If an account exists, a verification code has been sent.' });
     } catch (err) {
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
@@ -222,7 +231,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
 
     const user = await User.findOne({
       email,
-      resetPasswordToken: otp,
+      resetPasswordToken: hashOtp(otp),
       resetPasswordExpire: { $gt: Date.now() },
     });
 
@@ -232,7 +241,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     }
 
     // Set new password
-    user.password = req.body.password;
+    user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
 
@@ -249,7 +258,7 @@ export const verifyAccount = async (req: Request, res: Response): Promise<void> 
     const { email, code } = req.body;
     const user = await User.findOne({ 
       email, 
-      verificationCode: code,
+      verificationCode: hashOtp(code),
       verificationExpire: { $gt: Date.now() }
     });
 
@@ -276,18 +285,18 @@ export const resendOTP = async (req: Request, res: Response): Promise<void> => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      res.status(404).json({ message: 'User not found' });
+      res.json({ message: 'If an account exists, a new code has been sent.' });
       return;
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = generateOtp();
     const expiry = new Date(Date.now() + (type === 'verification' ? 24 * 60 * 60 * 1000 : 10 * 60 * 1000));
 
     if (type === 'verification') {
-      user.verificationCode = otp;
+      user.verificationCode = hashOtp(otp);
       user.verificationExpire = expiry;
     } else {
-      user.resetPasswordToken = otp;
+      user.resetPasswordToken = hashOtp(otp);
       user.resetPasswordExpire = expiry;
     }
 
@@ -321,7 +330,7 @@ export const resendOTP = async (req: Request, res: Response): Promise<void> => {
       html
     });
 
-    res.json({ message: 'New code sent to your email' });
+    res.json({ message: 'If an account exists, a new code has been sent.' });
   } catch (error) {
     res.status(500).json({ message: 'Error in resendOTP', error });
   }
@@ -332,7 +341,7 @@ export const verifyResetCode = async (req: Request, res: Response): Promise<void
     const { email, otp } = req.body;
     const user = await User.findOne({ 
       email, 
-      resetPasswordToken: otp,
+      resetPasswordToken: hashOtp(otp),
       resetPasswordExpire: { $gt: Date.now() }
     });
 

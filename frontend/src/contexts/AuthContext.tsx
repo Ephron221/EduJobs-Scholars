@@ -6,6 +6,7 @@ export interface User {
   name: string;
   email: string;
   role: 'student' | 'admin' | 'jobseeker';
+  avatar?: string;
   savedOpportunities: { id: string; type: 'university' | 'job' }[];
   isActive: boolean;
   createdAt: string;

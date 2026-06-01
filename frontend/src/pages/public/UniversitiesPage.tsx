@@ -7,6 +7,13 @@ import Loader from '../../components/Loader';
 import { useAuth } from '../../contexts/AuthContext';
 
 const COUNTRIES = ['Rwanda', 'Kenya', 'Uganda', 'Tanzania', 'South Africa', 'USA', 'UK', 'Canada', 'Australia', 'Germany', 'France'];
+const FUNDING_TYPES = [
+  { value: '', label: 'All Types' },
+  { value: 'scholarship', label: 'Scholarship' },
+  { value: 'partial_scholarship', label: 'Partial Scholarship' },
+  { value: 'study_loan', label: 'Study Loan' },
+  { value: 'self_sponsored', label: 'Self-sponsored' },
+];
 
 export default function UniversitiesPage() {
   const [universities, setUniversities] = useState<never[]>([]);
@@ -16,6 +23,7 @@ export default function UniversitiesPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [country, setCountry] = useState('');
+  const [fundingType, setFundingType] = useState('');
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [searchParams] = useSearchParams();
@@ -36,17 +44,18 @@ export default function UniversitiesPage() {
       const params: Record<string, unknown> = { page, limit: 12 };
       if (search) params.search = search;
       if (country) params.country = country;
+      if (fundingType) params.fundingType = fundingType;
       const res = await universityAPI.getAll(params);
       setUniversities(res.data.universities);
       setTotal(res.data.total);
       setTotalPages(res.data.totalPages);
     } catch { /* silent */ }
     setLoading(false);
-  }, [page, search, country]);
+  }, [page, search, country, fundingType]);
 
   useEffect(() => { fetchUniversities(); }, [fetchUniversities]);
 
-  const clearFilters = () => { setSearch(''); setCountry(''); setPage(1); };
+  const clearFilters = () => { setSearch(''); setCountry(''); setFundingType(''); setPage(1); };
 
   return (
     <div className="min-h-screen pt-24 pb-16">
@@ -77,10 +86,13 @@ export default function UniversitiesPage() {
               <option value="">All Countries</option>
               {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
+            <select value={fundingType} onChange={(e) => { setFundingType(e.target.value); setPage(1); }} className="select-field sm:w-52">
+              {FUNDING_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
             <button onClick={() => setShowFilters(!showFilters)} className="btn-secondary flex items-center gap-2 whitespace-nowrap">
               <Filter size={15} /> Filters
             </button>
-            {(search || country) && (
+            {(search || country || fundingType) && (
               <button onClick={clearFilters} className="flex items-center gap-1 text-sm text-red-400 hover:text-red-300 px-3 transition-colors">
                 <X size={14} /> Clear
               </button>
@@ -93,6 +105,21 @@ export default function UniversitiesPage() {
           <p className="text-gray-600 dark:text-gray-400 text-sm">
             Showing <span className="text-gray-900 dark:text-white font-semibold">{universities.length}</span> of <span className="text-gray-900 dark:text-white font-semibold">{total}</span> universities
           </p>
+          <div className="hidden lg:flex gap-2">
+            {FUNDING_TYPES.slice(1).map((t) => (
+              <button
+                key={t.value}
+                onClick={() => { setFundingType(fundingType === t.value ? '' : t.value); setPage(1); }}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-all border ${
+                  fundingType === t.value
+                    ? 'bg-cyan-500 text-black border-cyan-500'
+                    : 'bg-white dark:bg-gray-900/5 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-white/10 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Grid */}

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, Trash2, Users, Search, GraduationCap, CheckCircle, Ban, Eye, FileText, Activity } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Plus, Pencil, Trash2, Users, Search, GraduationCap, CheckCircle, Ban, Eye, FileText, Activity, Download, UploadCloud, ArrowUpRight } from 'lucide-react';
 import { studentAPI } from '../../api';
 import AdminLayout from './AdminLayout';
 import Modal from '../../components/Modal';
@@ -7,6 +7,20 @@ import StatusBadge from '../../components/StatusBadge';
 import Loader from '../../components/Loader';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+
+interface StudentDocument {
+  name: string;
+  url: string;
+  category: 'nationalId' | 'passportPhoto' | 'diploma' | 'other';
+  uploadedAt: string;
+}
+
+interface UploadRow {
+  id: string;
+  category: 'nationalId' | 'passportPhoto' | 'diploma' | 'other';
+  file?: File;
+  customName: string;
+}
 
 interface Student {
   _id: string;
@@ -28,6 +42,7 @@ interface Student {
   guardianName: string;
   guardianPhone: string;
   guardianEmail: string;
+  documents?: StudentDocument[];
   createdAt: string;
   updatedAt: string;
 }
@@ -68,6 +83,26 @@ export default function StudentRecords() {
   const [form, setForm] = useState<typeof EMPTY_FORM>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [documentFiles, setDocumentFiles] = useState<{
+    nationalId?: File;
+    passportPhoto?: File;
+    diploma?: File;
+    other?: File[];
+  }>({});
+  const [fileReplaceTarget, setFileReplaceTarget] = useState<{
+    studentId: string;
+    oldUrl: string;
+    category: 'nationalId' | 'passportPhoto' | 'diploma' | 'other';
+  } | null>(null);
+  const [selectedPreview, setSelectedPreview] = useState<StudentDocument | null>(null);
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [renameTarget, setRenameTarget] = useState<{ studentId: string; fileUrl: string; name: string } | null>(null);
+  const [newDocRows, setNewDocRows] = useState<UploadRow[]>([{ id: 'row-1', category: 'other', customName: '' }]);
+  const [fileActionLoading, setFileActionLoading] = useState(false);
+  const replaceInputRef = useRef<HTMLInputElement | null>(null);
+  const previewRef = useRef<HTMLDivElement | null>(null);
 
   const fetchStudents = useCallback(async () => {
     setLoading(true);
@@ -87,7 +122,200 @@ export default function StudentRecords() {
 
   useEffect(() => { fetchStudents(); }, [fetchStudents]);
 
-  const openCreate = () => { setForm(EMPTY_FORM); setEditItem(null); setModalOpen(true); };
+  useEffect(() => {
+    if (!selectedPreview) {
+      setPreviewBlobUrl(null);
+      setPreviewError(null);
+      setPreviewLoading(false);
+      return;
+    }
+
+    let objectUrl: string | null = null;
+    let cancelled = false;
+    const loadPreview = async () => {
+      setPreviewLoading(true);
+      setPreviewError(null);
+      try {
+        const response = await fetch(selectedPreview.url);
+        if (!response.ok) throw new Error('Unable to load preview');
+        const blob = await response.blob();
+        objectUrl = URL.createObjectURL(blob);
+        if (!cancelled) setPreviewBlobUrl(objectUrl);
+      } catch (error) {
+        if (!cancelled) setPreviewError((error as Error).message || 'Preview failed');
+      } finally {
+        if (!cancelled) setPreviewLoading(false);
+      }
+    };
+
+    loadPreview();
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [selectedPreview]);
+
+  const normalizeDocuments = (documents: (StudentDocument | string)[] = []): StudentDocument[] =>
+    documents.map((doc) => typeof doc === 'string'
+      ? {
+          name: doc.split('/').pop() || 'Document',
+          url: doc,
+          category: 'other',
+          uploadedAt: '',
+        }
+      : doc
+    );
+
+  const getExistingDocNames = (student: Student | null, category: 'nationalId' | 'passportPhoto' | 'diploma' | 'other') => {
+    if (!student?.documents) return null;
+    const docs = normalizeDocuments(student.documents).filter((doc) => doc.category === category);
+    return docs.length ? docs.map((doc) => doc.name).join(', ') : null;
+  };
+
+  const categoryLabels: Record<string, string> = {
+    nationalId: 'National ID / Passport',
+    passportPhoto: 'Passport Photo',
+    diploma: 'Diploma / Certificate',
+    other: 'Other Documents',
+  };
+
+  const refreshStudent = async (studentId: string) => {
+    try {
+      const res = await studentAPI.getById(studentId);
+      setViewModal(res.data.student);
+      fetchStudents();
+    } catch {
+      toast.error('Failed to refresh student documents');
+    }
+  };
+
+  const getDocumentExtension = (doc: StudentDocument) => {
+    const source = `${doc.name || ''} ${doc.url || ''}`.split('?')[0];
+    return source.match(/\.([a-z0-9]+)$/i)?.[1]?.toLowerCase() || '';
+  };
+  const isPreviewableImage = (doc: StudentDocument) => ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(getDocumentExtension(doc));
+  const isPreviewablePdf = (doc: StudentDocument) => getDocumentExtension(doc) === 'pdf';
+
+  const selectPreview = (doc: StudentDocument) => {
+    setSelectedPreview(doc);
+    setRenameTarget({ studentId: viewModal?._id || '', fileUrl: doc.url, name: doc.name });
+    window.setTimeout(() => previewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  };
+
+  const openFileInNewTab = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const updateDocumentName = async () => {
+    if (!renameTarget || !viewModal) return;
+    setFileActionLoading(true);
+    try {
+      await studentAPI.renameFile(renameTarget.studentId, renameTarget.fileUrl, renameTarget.name);
+      await refreshStudent(renameTarget.studentId);
+      setSelectedPreview((prev) => prev ? { ...prev, name: renameTarget.name } : prev);
+      toast.success('Document name updated successfully');
+    } catch {
+      toast.error('Failed to update file name');
+    }
+    setFileActionLoading(false);
+  };
+
+  const uploadDocumentFiles = async (studentId: string) => {
+    if (documentFiles.nationalId) {
+      const formData = new FormData();
+      formData.append('files', documentFiles.nationalId);
+      formData.append('category', 'nationalId');
+      formData.append('names', documentFiles.nationalId.name);
+      await studentAPI.uploadFiles(studentId, formData);
+    }
+    if (documentFiles.passportPhoto) {
+      const formData = new FormData();
+      formData.append('files', documentFiles.passportPhoto);
+      formData.append('category', 'passportPhoto');
+      formData.append('names', documentFiles.passportPhoto.name);
+      await studentAPI.uploadFiles(studentId, formData);
+    }
+    if (documentFiles.diploma) {
+      const formData = new FormData();
+      formData.append('files', documentFiles.diploma);
+      formData.append('category', 'diploma');
+      formData.append('names', documentFiles.diploma.name);
+      await studentAPI.uploadFiles(studentId, formData);
+    }
+    if (documentFiles.other?.length) {
+      const formData = new FormData();
+      documentFiles.other.forEach((file) => formData.append('files', file));
+      formData.append('category', 'other');
+      documentFiles.other.forEach((file) => formData.append('names', file.name));
+      await studentAPI.uploadFiles(studentId, formData);
+    }
+
+    for (const row of newDocRows) {
+      if (!row.file) continue;
+      const formData = new FormData();
+      formData.append('files', row.file);
+      formData.append('category', row.category);
+      formData.append('names', row.customName.trim() || row.file.name);
+      await studentAPI.uploadFiles(studentId, formData);
+    }
+  };
+
+  const addUploadRow = () => {
+    setNewDocRows((prev) => [...prev, { id: `row-${Date.now()}`, category: 'other', customName: '' }]);
+  };
+
+  const updateUploadRow = (id: string, updates: Partial<UploadRow>) => {
+    setNewDocRows((prev) => prev.map((row) => row.id === id ? { ...row, ...updates } : row));
+  };
+
+  const removeUploadRow = (id: string) => {
+    setNewDocRows((prev) => prev.filter((row) => row.id !== id));
+  };
+
+  const handleDeleteFile = async (studentId: string, fileUrl: string) => {
+    if (!window.confirm('Delete this file from the student profile?')) return;
+    setFileActionLoading(true);
+    try {
+      await studentAPI.deleteFile(studentId, fileUrl);
+      await refreshStudent(studentId);
+      toast.success('File deleted successfully');
+    } catch {
+      toast.error('Failed to delete file');
+    }
+    setFileActionLoading(false);
+  };
+
+  const openReplaceFile = (studentId: string, oldUrl: string, category: 'nationalId' | 'passportPhoto' | 'diploma' | 'other') => {
+    setFileReplaceTarget({ studentId, oldUrl, category });
+    replaceInputRef.current?.click();
+  };
+
+  const handleReplaceFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !fileReplaceTarget) return;
+    setFileActionLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('files', file);
+      formData.append('category', fileReplaceTarget.category);
+      await studentAPI.uploadFiles(fileReplaceTarget.studentId, formData);
+      await studentAPI.deleteFile(fileReplaceTarget.studentId, fileReplaceTarget.oldUrl);
+      await refreshStudent(fileReplaceTarget.studentId);
+      toast.success('File replaced successfully');
+    } catch {
+      toast.error('Failed to replace file');
+    }
+    setFileActionLoading(false);
+    setFileReplaceTarget(null);
+    if (replaceInputRef.current) replaceInputRef.current.value = '';
+  };
+
+  const openCreate = () => {
+    setForm(EMPTY_FORM);
+    setEditItem(null);
+    setDocumentFiles({});
+    setModalOpen(true);
+  };
   
   const openEdit = (s: Student) => {
     setForm({
@@ -98,23 +326,47 @@ export default function StudentRecords() {
       admissionDate: s.admissionDate.split('T')[0],
     });
     setEditItem(s);
+    setDocumentFiles({});
     setModalOpen(true);
   };
+
+  const openView = async (s: Student) => {
+    try {
+      const res = await studentAPI.getById(s._id);
+      setViewModal(res.data.student);
+      setSelectedPreview(null);
+      setRenameTarget(null);
+    } catch {
+      toast.error('Failed to load student profile');
+    }
+  };
+
+  const previewSrc = selectedPreview ? (previewBlobUrl || selectedPreview.url) : '';
+  const canPreviewSelectedImage = selectedPreview ? isPreviewableImage(selectedPreview) : false;
+  const canPreviewSelectedPdf = selectedPreview ? isPreviewablePdf(selectedPreview) : false;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
+      let studentId: string | null = null;
       if (editItem) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { password, ...updateData } = form; // Don't send empty password on update
         await studentAPI.update(editItem._id, updateData);
+        studentId = editItem._id;
         toast.success('Student updated!');
       } else {
-        await studentAPI.create(form);
+        const res = await studentAPI.create(form);
+        studentId = res.data.student?._id || null;
         toast.success('Student created!');
       }
+
+      if (studentId) {
+        await uploadDocumentFiles(studentId);
+      }
+
       setModalOpen(false);
+      setDocumentFiles({});
       fetchStudents();
     } catch {
       toast.error('Failed to save student');
@@ -143,8 +395,17 @@ export default function StudentRecords() {
     }
   };
 
+  const viewDocuments = viewModal ? normalizeDocuments(viewModal.documents || []) : [];
+
   return (
     <AdminLayout title="Student Records">
+      <input
+        ref={replaceInputRef}
+        type="file"
+        hidden
+        accept=".pdf,.jpg,.jpeg,.png"
+        onChange={handleReplaceFile}
+      />
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="glass-card p-4 flex items-center justify-between">
@@ -244,7 +505,7 @@ export default function StudentRecords() {
                         <button onClick={() => toggleStatus(s._id)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all" title={s.status === 'active' ? 'Suspend' : 'Activate'}>
                           {s.status === 'active' ? <Ban size={14} /> : <CheckCircle size={14} />}
                         </button>
-                        <button onClick={() => setViewModal(s)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/10 transition-all"><Eye size={14} /></button>
+                        <button onClick={() => openView(s)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/10 transition-all"><Eye size={14} /></button>
                         <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all"><Pencil size={14} /></button>
                         <button onClick={() => setDeleteId(s._id)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"><Trash2 size={14} /></button>
                       </div>
@@ -333,7 +594,113 @@ export default function StudentRecords() {
                 </div>
               )}
             </div>
-            
+
+            <div className="space-y-4">
+              <div className="space-y-4">
+                {viewDocuments.length === 0 ? (
+                  <div className="rounded-3xl border border-gray-200 dark:border-white/10 bg-white/70 dark:bg-gray-950/70 p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                    No uploaded student documents available.
+                  </div>
+                ) : (
+                  (['nationalId', 'passportPhoto', 'diploma', 'other'] as const).map((category) => {
+                    const docs = viewDocuments.filter((doc) => doc.category === category);
+                    if (docs.length === 0) return null;
+                    return (
+                      <div key={category} className="rounded-3xl border border-gray-200 dark:border-white/10 bg-white/70 dark:bg-gray-950/70 p-4">
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-3">{categoryLabels[category]}</h4>
+                        <div className="space-y-3">
+                          {docs.map((doc) => (
+                            <div key={doc.url} className="rounded-2xl border border-gray-200 dark:border-white/10 p-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="min-w-0">
+                                <p className="font-semibold text-gray-900 dark:text-white truncate">{doc.name}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleString() : 'Uploaded'}</p>
+                              </div>
+                              <div className="flex flex-wrap gap-2 items-center justify-end">
+                                <button type="button" title="Preview" onClick={() => selectPreview(doc)} className="btn-secondary btn-sm p-2 rounded-lg">
+                                  <Eye size={16} />
+                                </button>
+                                <button type="button" title="Download" onClick={() => openFileInNewTab(doc.url)} className="btn-secondary btn-sm p-2 rounded-lg">
+                                  <Download size={16} />
+                                </button>
+                                <button type="button" title="Replace" onClick={() => openReplaceFile(viewModal._id, doc.url, category)} disabled={fileActionLoading} className="btn-primary btn-sm p-2 rounded-lg">
+                                  <UploadCloud size={16} />
+                                </button>
+                                <button type="button" title="Delete" onClick={() => handleDeleteFile(viewModal._id, doc.url)} disabled={fileActionLoading} className="btn-danger btn-sm p-2 rounded-lg">
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+
+                {selectedPreview && (
+                  <div ref={previewRef} className="rounded-3xl border border-cyan-200 dark:border-cyan-500/40 bg-white/80 dark:bg-gray-950/80 p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">Previewing: {selectedPreview.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Category: {categoryLabels[selectedPreview.category]}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <button type="button" onClick={() => setSelectedPreview(null)} className="btn-secondary btn-sm">Close Preview</button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-gray-200 dark:border-white/10 p-3 mb-4 min-h-[360px] overflow-hidden bg-gray-50 dark:bg-gray-900">
+                      {previewLoading ? (
+                        <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-sm text-gray-500 dark:text-gray-400">
+                          <p>Loading preview...</p>
+                        </div>
+                      ) : previewError ? (
+                        <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-sm text-gray-500 dark:text-gray-400">
+                          <p>{previewError}</p>
+                          <div className="flex flex-wrap items-center gap-2 justify-center">
+                            <button type="button" onClick={() => openFileInNewTab(selectedPreview.url)} className="btn-secondary btn-sm flex items-center gap-2">
+                              <ArrowUpRight size={14} /> Open in new tab
+                            </button>
+                          </div>
+                        </div>
+                      ) : canPreviewSelectedImage ? (
+                        <img src={previewSrc} alt={selectedPreview.name} className="w-full max-h-[520px] object-contain rounded-lg" />
+                      ) : canPreviewSelectedPdf ? (
+                        <iframe
+                          key={previewSrc}
+                          src={previewSrc}
+                          title={selectedPreview.name}
+                          className="w-full h-[70vh] min-h-[460px] rounded-lg bg-white"
+                        />
+                      ) : (
+                        <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-sm text-gray-500 dark:text-gray-400">
+                          <p>This document cannot be previewed inline.</p>
+                          <div className="flex flex-wrap items-center gap-2 justify-center">
+                            <button type="button" onClick={() => openFileInNewTab(selectedPreview.url)} className="btn-secondary btn-sm flex items-center gap-2">
+                              <ArrowUpRight size={14} /> Open in new tab
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">File Label</label>
+                        <input
+                          type="text"
+                          value={renameTarget?.name || selectedPreview.name}
+                          onChange={(e) => renameTarget && setRenameTarget({ ...renameTarget, name: e.target.value })}
+                          className="input-field py-2 w-full"
+                        />
+                      </div>
+                      <button type="button" onClick={updateDocumentName} disabled={fileActionLoading} className="btn-primary btn-sm h-11 self-end">Save Label</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="pt-4 border-t border-gray-200 dark:border-white/10 flex justify-end">
               <button onClick={() => setViewModal(null)} className="btn-secondary">Close Profile</button>
             </div>
@@ -433,13 +800,49 @@ export default function StudentRecords() {
             <h4 className="text-sm font-bold text-gray-400 mb-3 uppercase tracking-wider">Documents (Optional)</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div><label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">National ID / Passport</label>
-                <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100 dark:file:bg-gray-800 dark:file:text-cyan-400 dark:hover:file:bg-gray-700 cursor-pointer" /></div>
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setDocumentFiles({ ...documentFiles, nationalId: e.target.files?.[0] })} className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100 dark:file:bg-gray-800 dark:file:text-cyan-400 dark:hover:file:bg-gray-700 cursor-pointer" />
+                <p className="text-xs text-gray-400 mt-1">{documentFiles.nationalId?.name || getExistingDocNames(editItem, 'nationalId') || 'No file selected'}</p></div>
               <div><label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Diploma / Certificate</label>
-                <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100 dark:file:bg-gray-800 dark:file:text-cyan-400 dark:hover:file:bg-gray-700 cursor-pointer" /></div>
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setDocumentFiles({ ...documentFiles, diploma: e.target.files?.[0] })} className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100 dark:file:bg-gray-800 dark:file:text-cyan-400 dark:hover:file:bg-gray-700 cursor-pointer" />
+                <p className="text-xs text-gray-400 mt-1">{documentFiles.diploma?.name || getExistingDocNames(editItem, 'diploma') || 'No file selected'}</p></div>
               <div><label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Passport Photo</label>
-                <input type="file" accept=".jpg,.jpeg,.png" className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100 dark:file:bg-gray-800 dark:file:text-cyan-400 dark:hover:file:bg-gray-700 cursor-pointer" /></div>
+                <input type="file" accept=".jpg,.jpeg,.png" onChange={(e) => setDocumentFiles({ ...documentFiles, passportPhoto: e.target.files?.[0] })} className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100 dark:file:bg-gray-800 dark:file:text-cyan-400 dark:hover:file:bg-gray-700 cursor-pointer" />
+                <p className="text-xs text-gray-400 mt-1">{documentFiles.passportPhoto?.name || getExistingDocNames(editItem, 'passportPhoto') || 'No file selected'}</p></div>
               <div><label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Other Documents</label>
-                <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100 dark:file:bg-gray-800 dark:file:text-cyan-400 dark:hover:file:bg-gray-700 cursor-pointer" /></div>
+                <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={(e) => setDocumentFiles({ ...documentFiles, other: Array.from(e.target.files || []) })} className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100 dark:file:bg-gray-800 dark:file:text-cyan-400 dark:hover:file:bg-gray-700 cursor-pointer" />
+                <p className="text-xs text-gray-400 mt-1">{documentFiles.other?.length ? `${documentFiles.other.length} file(s) selected` : getExistingDocNames(editItem, 'other') || 'No files selected'}</p></div>
+            </div>
+            <div className="mt-4 rounded-3xl border border-gray-200 dark:border-white/10 bg-white/70 dark:bg-gray-950/70 p-4">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">Additional Documents</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Upload extra files and set your own names.</p>
+                </div>
+                <button type="button" onClick={addUploadRow} className="btn-secondary btn-sm">Add file</button>
+              </div>
+              <div className="space-y-3">
+                {newDocRows.map((row) => (
+                  <div key={row.id} className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Category</label>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Document name</label>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">File</label>
+                      <select value={row.category} onChange={(e) => updateUploadRow(row.id, { category: e.target.value as UploadRow['category'] })} className="select-field py-2">
+                        <option value="nationalId">National ID / Passport</option>
+                        <option value="passportPhoto">Passport Photo</option>
+                        <option value="diploma">Diploma / Certificate</option>
+                        <option value="other">Other Document</option>
+                      </select>
+                      <input type="text" value={row.customName} onChange={(e) => updateUploadRow(row.id, { customName: e.target.value })} className="input-field py-2" placeholder="Custom file label" />
+                      <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={(e) => updateUploadRow(row.id, { file: e.target.files?.[0] })} className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100 dark:file:bg-gray-800 dark:file:text-cyan-400 dark:hover:file:bg-gray-700 cursor-pointer" />
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs text-gray-400">{row.file?.name || 'No file selected'}</p>
+                      <button type="button" onClick={() => removeUploadRow(row.id)} className="btn-danger btn-sm">Remove</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
             <p className="text-xs text-gray-500 mt-2 italic">Note: File uploads will be processed and securely stored in the student's profile.</p>
           </div>

@@ -1,6 +1,6 @@
 import { Bell, CheckCheck, AlertCircle, Megaphone, Briefcase, BookOpen, Info } from 'lucide-react';
 import { useNotifications } from '../../contexts/NotificationContext';
-import StudentLayout from './StudentLayout';
+import StudentLayout from './JobseekerLayout';
 import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
 

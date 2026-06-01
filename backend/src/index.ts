@@ -18,6 +18,8 @@ import guidanceRoutes from './routes/guidance.routes';
 import statsRoutes from './routes/stats.routes';
 import studentRoutes from './routes/student.routes';
 import contactRoutes from './routes/contact.routes';
+import heroImageRoutes from './routes/heroImage.routes';
+import successStoryRoutes from './routes/successStory.routes';
 
 dotenv.config();
 
@@ -52,6 +54,8 @@ app.use('/api/guidance', guidanceRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/hero-images', heroImageRoutes);
+app.use('/api/success-stories', successStoryRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

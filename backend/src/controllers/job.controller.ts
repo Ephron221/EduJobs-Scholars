@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import path from 'path';
-import fs from 'fs';
 import Job from '../models/Job';
 import { AuthRequest } from '../middleware/auth';
+import { deleteUploadedFile } from '../utils/uploadPath';
 
 export const getJobs = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -120,12 +120,7 @@ export const deleteJobFile = async (req: AuthRequest, res: Response): Promise<vo
     }
     await job.save();
 
-    // Delete physical file
-    try {
-      const urlPath = new URL(fileUrl).pathname;
-      const filePath = path.join(process.cwd(), urlPath);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    } catch { /* ignore */ }
+    deleteUploadedFile(fileUrl);
 
     res.json({ message: 'File deleted successfully' });
   } catch (error) {

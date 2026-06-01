@@ -3,11 +3,12 @@ import Program from '../models/Program';
 
 export const getPrograms = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { search, fieldOfStudy, level, page = 1, limit = 12 } = req.query;
+    const { search, fieldOfStudy, level, fundingType, page = 1, limit = 12 } = req.query;
     const query: Record<string, unknown> = {};
     if (search) query.$text = { $search: search as string };
     if (fieldOfStudy) query.fieldOfStudy = { $regex: fieldOfStudy as string, $options: 'i' };
     if (level) query.level = level;
+    if (fundingType) query.fundingType = fundingType;
     const skip = (Number(page) - 1) * Number(limit);
     const [programs, total] = await Promise.all([
       Program.find(query).populate('universityId', 'name country logoUrl').sort({ deadline: 1 }).skip(skip).limit(Number(limit)),

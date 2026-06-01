@@ -55,6 +55,25 @@ export const createApplication = async (req: Request, res: Response): Promise<vo
   }
 };
 
+export const createPublicApplication = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { studentName, studentEmail, studentPhone, opportunityId, opportunityType, opportunityName, notes } = req.body;
+    const application = await StudentApplication.create({
+      studentName,
+      studentEmail,
+      studentPhone,
+      opportunityId,
+      opportunityType,
+      opportunityName,
+      notes,
+      status: 'Interested',
+    });
+    res.status(201).json({ message: 'Application assistance request submitted successfully', application });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to submit application assistance request', error });
+  }
+};
+
 export const updateApplication = async (req: Request, res: Response): Promise<void> => {
   try {
     const application = await StudentApplication.findByIdAndUpdate(

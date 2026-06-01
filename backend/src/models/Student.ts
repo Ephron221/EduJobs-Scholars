@@ -20,7 +20,12 @@ export interface IStudent extends Document {
   guardianName: string;
   guardianPhone: string;
   guardianEmail: string;
-  documents: string[];
+  documents: {
+    name: string;
+    url: string;
+    category: 'nationalId' | 'passportPhoto' | 'diploma' | 'other';
+    uploadedAt: Date;
+  }[];
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -50,16 +55,33 @@ const StudentSchema = new Schema<IStudent>(
     guardianName: { type: String, trim: true, default: '' },
     guardianPhone: { type: String, trim: true, default: '' },
     guardianEmail: { type: String, trim: true, default: '' },
-    documents: [{ type: String }],
+    documents: [{
+      name: { type: String, required: true },
+      url: { type: String, required: true },
+      category: { type: String, enum: ['nationalId', 'passportPhoto', 'diploma', 'other'], default: 'other' },
+      uploadedAt: { type: Date, default: Date.now },
+    }],
   },
   { timestamps: true }
 );
 
-// Password hashing removed to keep passwords/PINs in plain text
-// StudentSchema.pre('save', async function () {
-//   if (!this.isModified('password')) return;
-//   this.password = await bcrypt.hash(this.password, 12);
-// });
+StudentSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
+  if (this.password.startsWith('$2a$') || this.password.startsWith('$2b$')) return;
+  this.password = await bcrypt.hash(this.password, 12);
+});
+
+StudentSchema.pre('findOneAndUpdate', async function () {
+  const update = this.getUpdate() as Record<string, any> | null;
+  const password = update?.password || update?.$set?.password;
+  if (!password || password.startsWith('$2a$') || password.startsWith('$2b$')) return;
+  const hashed = await bcrypt.hash(password, 12);
+  if (update?.$set?.password) {
+    update.$set.password = hashed;
+  } else if (update) {
+    update.password = hashed;
+  }
+});
 
 StudentSchema.methods.comparePassword = async function (
   candidatePassword: string
@@ -73,6 +95,7 @@ StudentSchema.methods.comparePassword = async function (
 
 StudentSchema.set('toJSON', {
   transform: (_doc, ret) => {
+    delete (ret as any).password;
     return ret;
   },
 });

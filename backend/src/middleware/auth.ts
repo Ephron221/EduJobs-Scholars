@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/User';
+import { getJwtSecret } from '../config/env';
 
 export interface AuthRequest extends Request {
   user?: IUser;
@@ -14,7 +15,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       return;
     }
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { id: string };
+    const decoded = jwt.verify(token, getJwtSecret()) as { id: string };
     const user = await User.findById(decoded.id).select('-password');
     if (!user || !user.isActive) {
       res.status(401).json({ message: 'User not found or account disabled.' });

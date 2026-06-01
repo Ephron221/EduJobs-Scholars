@@ -10,6 +10,7 @@ export interface IProgram extends Document {
   duration: string;
   tuitionFee: string;
   level: 'undergraduate' | 'postgraduate' | 'diploma' | 'certificate';
+  fundingType: 'scholarship' | 'partial_scholarship' | 'study_loan' | 'self_sponsored';
   createdAt: Date;
 }
 
@@ -23,6 +24,11 @@ const ProgramSchema = new Schema<IProgram>({
   duration: { type: String, required: true },
   tuitionFee: { type: String, default: 'Not specified' },
   level: { type: String, enum: ['undergraduate', 'postgraduate', 'diploma', 'certificate'], default: 'undergraduate' },
+  fundingType: {
+    type: String,
+    enum: ['scholarship', 'partial_scholarship', 'study_loan', 'self_sponsored'],
+    default: 'self_sponsored',
+  },
 }, { timestamps: true });
 
 ProgramSchema.index({ name: 'text', fieldOfStudy: 'text', requirements: 'text' });

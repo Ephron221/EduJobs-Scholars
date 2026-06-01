@@ -34,10 +34,14 @@ import ManageUniversities from './pages/admin/ManageUniversities';
 import ManagePrograms from './pages/admin/ManagePrograms';
 import ManageJobs from './pages/admin/ManageJobs';
 import StudentRecords from './pages/admin/StudentRecords';
+import AssistanceRequests from './pages/admin/AssistanceRequests';
 import ManageUsers from './pages/admin/ManageUsers';
 import GuidanceAdmin from './pages/admin/GuidanceAdmin';
 import Announcements from './pages/admin/Announcements';
 import ContactMessages from './pages/admin/ContactMessages';
+import AdminProfile from './pages/admin/AdminProfile';
+import HeroImages from './pages/admin/HeroImages';
+import SuccessStories from './pages/admin/SuccessStories';
 
 // Layout
 import Navbar from './components/Navbar';
@@ -91,14 +95,18 @@ function AppRoutes() {
 
       {/* Admin */}
       <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/admin/profile" element={<ProtectedRoute adminOnly><AdminProfile /></ProtectedRoute>} />
       <Route path="/admin/universities" element={<ProtectedRoute adminOnly><ManageUniversities /></ProtectedRoute>} />
       <Route path="/admin/programs" element={<ProtectedRoute adminOnly><ManagePrograms /></ProtectedRoute>} />
       <Route path="/admin/jobs" element={<ProtectedRoute adminOnly><ManageJobs /></ProtectedRoute>} />
+      <Route path="/admin/assistance-requests" element={<ProtectedRoute adminOnly><AssistanceRequests /></ProtectedRoute>} />
       <Route path="/admin/student-records" element={<ProtectedRoute adminOnly><StudentRecords /></ProtectedRoute>} />
       <Route path="/admin/users" element={<ProtectedRoute adminOnly><ManageUsers /></ProtectedRoute>} />
       <Route path="/admin/guidance" element={<ProtectedRoute adminOnly><GuidanceAdmin /></ProtectedRoute>} />
       <Route path="/admin/messages" element={<ProtectedRoute adminOnly><ContactMessages /></ProtectedRoute>} />
       <Route path="/admin/announcements" element={<ProtectedRoute adminOnly><Announcements /></ProtectedRoute>} />
+      <Route path="/admin/hero-images" element={<ProtectedRoute adminOnly><HeroImages /></ProtectedRoute>} />
+      <Route path="/admin/success-stories" element={<ProtectedRoute adminOnly><SuccessStories /></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -106,8 +114,7 @@ function AppRoutes() {
 }
 
 export default function App() {
-  // Hardcoding corrected Client ID to ensure immediate resolution
-  const googleClientId = "1047511645540-ldvt1iea73uc2gi40971vcgklmcgsb0k.apps.googleusercontent.com";
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
   return (
     <GoogleOAuthProvider clientId={googleClientId}>

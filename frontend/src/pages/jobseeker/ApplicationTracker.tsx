@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ClipboardList, GraduationCap, Briefcase, LayoutGrid, List } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { applicationAPI } from '../../api';
-import StudentLayout from './StudentLayout';
+import StudentLayout from './JobseekerLayout';
 import StatusBadge from '../../components/StatusBadge';
 import Loader from '../../components/Loader';
 import { format } from 'date-fns';
