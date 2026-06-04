@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import SuccessStory from '../models/SuccessStory';
 import { AuthRequest } from '../middleware/auth';
+import { getFileUrl } from '../utils/fileHelper';
 
 export const getSuccessStories = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -14,7 +15,7 @@ export const getSuccessStories = async (req: AuthRequest, res: Response): Promis
 export const createSuccessStory = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { fullName, type, howTheyKnow, howHelped, university, jobTitle, country } = req.body;
-    const profileImage = req.file ? `/uploads/images/${req.file.filename}` : undefined;
+    const profileImage = getFileUrl(req.file, false);
 
     const story = await SuccessStory.create({
       fullName,
@@ -37,7 +38,7 @@ export const updateSuccessStory = async (req: AuthRequest, res: Response): Promi
   try {
     const updateData: Record<string, unknown> = {
       ...req.body,
-      ...(req.file ? { profileImage: `/uploads/images/${req.file.filename}` } : {}),
+      ...(req.file ? { profileImage: getFileUrl(req.file, false) } : {}),
     };
 
     const story = await SuccessStory.findByIdAndUpdate(req.params.id, updateData, { new: true });

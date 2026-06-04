@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import path from 'path';
 import Student from '../models/Student';
 import { deleteUploadedFile } from '../utils/uploadPath';
+import { getFileUrl } from '../utils/fileHelper';
 
 export const getStudents = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -108,14 +109,14 @@ export const uploadStudentFiles = async (req: Request, res: Response): Promise<v
 
     const newDocuments = files.map((file, index) => {
       const isPdf = file.mimetype === 'application/pdf' || path.extname(file.originalname).toLowerCase() === '.pdf';
-      const relativePath = isPdf ? `/uploads/documents/${file.filename}` : `/uploads/images/${file.filename}`;
+      const url = getFileUrl(file, isPdf);
       return {
         name: names[index] || file.originalname,
-        url: `${baseUrl}${relativePath}`,
+        url: url || '',
         category: selectedCategory,
         uploadedAt: new Date(),
       };
-    });
+    }).filter(doc => doc.url);
 
     student.documents.push(...newDocuments);
     await student.save();

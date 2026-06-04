@@ -6,6 +6,7 @@ import { AuthRequest } from '../middleware/auth';
 import sendEmail from '../utils/sendEmail';
 import { OAuth2Client } from 'google-auth-library';
 import { getJwtSecret } from '../config/env';
+import { getFileUrl } from '../utils/fileHelper';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -132,7 +133,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
 
     if (name) updateFields.name = name;
     if (email) updateFields.email = email;
-    if (req.file) updateFields.avatar = `/uploads/images/${req.file.filename}`;
+    if (req.file) updateFields.avatar = getFileUrl(req.file, false);
 
     const user = await User.findByIdAndUpdate(
       req.user?._id,

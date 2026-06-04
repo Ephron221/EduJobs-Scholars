@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import HeroImage from '../models/HeroImage';
 import { AuthRequest } from '../middleware/auth';
+import { getFileUrl } from '../utils/fileHelper';
 
 export const getHeroImages = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -19,7 +20,7 @@ export const createHeroImage = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    const imageUrl = `/uploads/images/${req.file.filename}`;
+    const imageUrl = getFileUrl(req.file, false);
     const image = await HeroImage.create({
       imageUrl,
       altText,
@@ -38,7 +39,7 @@ export const updateHeroImage = async (req: AuthRequest, res: Response): Promise<
   try {
     const updateData: Record<string, unknown> = { ...req.body };
     if (req.file) {
-      updateData.imageUrl = `/uploads/images/${req.file.filename}`;
+      updateData.imageUrl = getFileUrl(req.file, false);
     }
 
     const image = await HeroImage.findByIdAndUpdate(req.params.id, updateData, { new: true });

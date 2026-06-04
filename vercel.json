@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "projects": [
+    {
+      "name": "edujobs-scholars-backend",
+      "path": "backend"
+    },
+    {
+      "name": "edujobs-scholars-frontend",
+      "path": "frontend"
+    }
+  ]
+}

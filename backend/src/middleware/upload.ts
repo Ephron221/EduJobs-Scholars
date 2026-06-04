@@ -1,35 +1,57 @@
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
 import { Request } from 'express';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import cloudinary from '../config/cloudinary';
 
-// Ensure uploads directories exist
-const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
-const IMAGE_DIR = path.join(UPLOADS_DIR, 'images');
-const DOC_DIR = path.join(UPLOADS_DIR, 'documents');
+// Use local storage for development, Cloudinary for production
+const USE_CLOUDINARY = process.env.NODE_ENV === 'production' || process.env.CLOUDINARY_CLOUD_NAME;
 
-[UPLOADS_DIR, IMAGE_DIR, DOC_DIR].forEach((dir) => {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+// Cloudinary storage configuration for images
+const imageCloudinaryStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'edujobs-scholars/images',
+    resource_type: 'auto',
+    format: async (_req: any, file: Express.Multer.File) => {
+      const ext = path.extname(file.originalname).slice(1);
+      return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? ext : 'jpg';
+    },
+  } as any,
 });
 
-// Storage for images
-const imageStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, IMAGE_DIR),
-  filename: (_req, file, cb) => {
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `${unique}${path.extname(file.originalname)}`);
-  },
+// Cloudinary storage configuration for documents
+const docCloudinaryStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'edujobs-scholars/documents',
+    resource_type: 'raw',
+    format: async (_req: any, file: Express.Multer.File) => 'pdf',
+  } as any,
 });
 
-// Storage for documents (PDFs)
-const docStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, DOC_DIR),
-  filename: (_req, file, cb) => {
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `${unique}${path.extname(file.originalname)}`);
-  },
+// Cloudinary storage configuration for mixed uploads
+const mixedCloudinaryStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: (_req: any, file: Express.Multer.File) => {
+      const isPdf = file.mimetype === 'application/pdf' || path.extname(file.originalname).toLowerCase() === '.pdf';
+      return isPdf ? 'edujobs-scholars/documents' : 'edujobs-scholars/images';
+    },
+    resource_type: (req: any, file: Express.Multer.File) => {
+      const isPdf = file.mimetype === 'application/pdf' || path.extname(file.originalname).toLowerCase() === '.pdf';
+      return isPdf ? 'raw' : 'auto';
+    },
+    format: async (_req: any, file: Express.Multer.File) => {
+      const ext = path.extname(file.originalname).slice(1).toLowerCase();
+      const isPdf = ext === 'pdf' || file.mimetype === 'application/pdf';
+      if (isPdf) return 'pdf';
+      return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? ext : 'jpg';
+    },
+  } as any,
 });
 
+// File type validators
 const imageFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const allowed = /jpeg|jpg|png|gif|webp/i;
   if (allowed.test(path.extname(file.originalname)) && allowed.test(file.mimetype)) {
@@ -58,18 +80,25 @@ const mixedFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFi
   }
 };
 
-// Mixed storage: route to correct folder based on mimetype
-const mixedStorage = multer.diskStorage({
-  destination: (_req, file, cb) => {
-    const isPdf = file.mimetype === 'application/pdf' || path.extname(file.originalname).toLowerCase() === '.pdf';
-    cb(null, isPdf ? DOC_DIR : IMAGE_DIR);
-  },
-  filename: (_req, file, cb) => {
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `${unique}${path.extname(file.originalname)}`);
-  },
+// Select storage based on environment
+const imageStorage = USE_CLOUDINARY ? imageCloudinaryStorage : multer.memoryStorage();
+const docStorage = USE_CLOUDINARY ? docCloudinaryStorage : multer.memoryStorage();
+const mixedStorage = USE_CLOUDINARY ? mixedCloudinaryStorage : multer.memoryStorage();
+
+export const uploadImage = multer({ 
+  storage: imageStorage, 
+  fileFilter: imageFilter, 
+  limits: { fileSize: 5 * 1024 * 1024 } 
 });
 
-export const uploadImage = multer({ storage: imageStorage, fileFilter: imageFilter, limits: { fileSize: 5 * 1024 * 1024 } });
-export const uploadDoc = multer({ storage: docStorage, fileFilter: docFilter, limits: { fileSize: 20 * 1024 * 1024 } });
-export const uploadMixed = multer({ storage: mixedStorage, fileFilter: mixedFilter, limits: { fileSize: 20 * 1024 * 1024 } });
+export const uploadDoc = multer({ 
+  storage: docStorage, 
+  fileFilter: docFilter, 
+  limits: { fileSize: 20 * 1024 * 1024 } 
+});
+
+export const uploadMixed = multer({ 
+  storage: mixedStorage, 
+  fileFilter: mixedFilter, 
+  limits: { fileSize: 20 * 1024 * 1024 } 
+});

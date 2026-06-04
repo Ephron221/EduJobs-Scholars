@@ -3,6 +3,7 @@ import path from 'path';
 import Job from '../models/Job';
 import { AuthRequest } from '../middleware/auth';
 import { deleteUploadedFile } from '../utils/uploadPath';
+import { getFileUrl } from '../utils/fileHelper';
 
 export const getJobs = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -79,19 +80,15 @@ export const uploadJobFiles = async (req: AuthRequest, res: Response): Promise<v
 
     const newImages: string[] = [];
     const newDocuments: { name: string; url: string; uploadedAt: Date }[] = [];
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     for (const file of files) {
       const isPdf = file.mimetype === 'application/pdf';
-      const relativePath = isPdf
-        ? `/uploads/documents/${file.filename}`
-        : `/uploads/images/${file.filename}`;
-      const url = `${baseUrl}${relativePath}`;
+      const url = getFileUrl(file, isPdf);
 
       if (isPdf) {
-        newDocuments.push({ name: file.originalname, url, uploadedAt: new Date() });
+        if (url) newDocuments.push({ name: file.originalname, url, uploadedAt: new Date() });
       } else {
-        newImages.push(url);
+        if (url) newImages.push(url);
       }
     }
 

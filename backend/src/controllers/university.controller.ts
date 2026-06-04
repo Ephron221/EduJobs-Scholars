@@ -4,6 +4,7 @@ import University from '../models/University';
 import Program from '../models/Program';
 import { AuthRequest } from '../middleware/auth';
 import { deleteUploadedFile } from '../utils/uploadPath';
+import { getFileUrl } from '../utils/fileHelper';
 
 export const getUniversities = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -82,19 +83,15 @@ export const uploadUniversityFiles = async (req: AuthRequest, res: Response): Pr
 
     const newImages: string[] = [];
     const newDocuments: { name: string; url: string; uploadedAt: Date }[] = [];
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     for (const file of files) {
       const isPdf = file.mimetype === 'application/pdf';
-      const relativePath = isPdf
-        ? `/uploads/documents/${file.filename}`
-        : `/uploads/images/${file.filename}`;
-      const url = `${baseUrl}${relativePath}`;
+      const url = getFileUrl(file, isPdf);
 
       if (isPdf) {
-        newDocuments.push({ name: file.originalname, url, uploadedAt: new Date() });
+        if (url) newDocuments.push({ name: file.originalname, url, uploadedAt: new Date() });
       } else {
-        newImages.push(url);
+        if (url) newImages.push(url);
       }
     }
 
