@@ -47,6 +47,8 @@ import SuccessStories from './pages/admin/SuccessStories';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
 const ProtectedRoute = ({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) => {
   const { isAuthenticated, isAdmin, loading } = useAuth();
   if (loading) return (
@@ -114,15 +116,12 @@ function AppRoutes() {
 }
 
 export default function App() {
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-
   return (
-    <GoogleOAuthProvider clientId={googleClientId}>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <ThemeProvider>
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthProvider>
             <NotificationProvider>
-              {/* Root wrapper: id required so ThemeContext can directly set bg/color */}
               <div id="app-root" className="min-h-screen transition-colors duration-300">
                 <AppRoutes />
                 <Toaster
