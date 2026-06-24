@@ -8,19 +8,24 @@ import cloudinary from '../config/cloudinary';
 
 dotenv.config();
 
-const uploadRoot = path.join(process.cwd(), 'uploads');
-const imageDir = path.join(uploadRoot, 'images');
-const documentDir = path.join(uploadRoot, 'documents');
-
-fs.mkdirSync(imageDir, { recursive: true });
-fs.mkdirSync(documentDir, { recursive: true });
-
 const hasCloudinaryConfig = Boolean(
   process.env.CLOUDINARY_CLOUD_NAME &&
   process.env.CLOUDINARY_API_KEY &&
   process.env.CLOUDINARY_API_SECRET
 );
+
+// Determine if we should use Cloudinary or Local Storage
 const USE_CLOUDINARY = process.env.NODE_ENV === 'production' ? hasCloudinaryConfig : false;
+
+const uploadRoot = path.join(process.cwd(), 'uploads');
+const imageDir = path.join(uploadRoot, 'images');
+const documentDir = path.join(uploadRoot, 'documents');
+
+// ONLY create local directories if NOT using Cloudinary (Development)
+if (!USE_CLOUDINARY) {
+  if (!fs.existsSync(imageDir)) fs.mkdirSync(imageDir, { recursive: true });
+  if (!fs.existsSync(documentDir)) fs.mkdirSync(documentDir, { recursive: true });
+}
 
 const safeFilename = (file: Express.Multer.File): string => {
   const ext = path.extname(file.originalname).toLowerCase();
@@ -28,7 +33,7 @@ const safeFilename = (file: Express.Multer.File): string => {
   return `${Date.now()}-${Math.round(Math.random() * 1e9)}-${base}${ext}`;
 };
 
-// Cloudinary storage configuration for images
+// Cloudinary storage configuration
 const imageCloudinaryStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -41,7 +46,6 @@ const imageCloudinaryStorage = new CloudinaryStorage({
   } as any,
 });
 
-// Cloudinary storage configuration for documents
 const docCloudinaryStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -51,7 +55,6 @@ const docCloudinaryStorage = new CloudinaryStorage({
   } as any,
 });
 
-// Cloudinary storage configuration for mixed uploads
 const mixedCloudinaryStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -59,19 +62,14 @@ const mixedCloudinaryStorage = new CloudinaryStorage({
       const isPdf = file.mimetype === 'application/pdf' || path.extname(file.originalname).toLowerCase() === '.pdf';
       return isPdf ? 'edujobs-scholars/documents' : 'edujobs-scholars/images';
     },
-    resource_type: (req: any, file: Express.Multer.File) => {
+    resource_type: (_req: any, file: Express.Multer.File) => {
       const isPdf = file.mimetype === 'application/pdf' || path.extname(file.originalname).toLowerCase() === '.pdf';
       return isPdf ? 'raw' : 'auto';
-    },
-    format: async (_req: any, file: Express.Multer.File) => {
-      const ext = path.extname(file.originalname).slice(1).toLowerCase();
-      const isPdf = ext === 'pdf' || file.mimetype === 'application/pdf';
-      if (isPdf) return 'pdf';
-      return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? ext : 'jpg';
     },
   } as any,
 });
 
+// Local storage configuration (Only for dev)
 const imageLocalStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, imageDir),
   filename: (_req, file, cb) => cb(null, safeFilename(file)),
@@ -108,36 +106,11 @@ const docFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilt
   }
 };
 
-const mixedFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const imageAllowed = /jpeg|jpg|png|gif|webp/i;
-  const isPdf = path.extname(file.originalname).toLowerCase() === '.pdf' && file.mimetype === 'application/pdf';
-  const isImage = imageAllowed.test(path.extname(file.originalname)) && imageAllowed.test(file.mimetype);
-  if (isPdf || isImage) {
-    cb(null, true);
-  } else {
-    cb(new Error('Only image files (jpg, png, gif, webp) or PDF files are allowed'));
-  }
-};
-
-// Select storage based on environment
+// Selection logic
 const imageStorage = USE_CLOUDINARY ? imageCloudinaryStorage : imageLocalStorage;
 const docStorage = USE_CLOUDINARY ? docCloudinaryStorage : docLocalStorage;
 const mixedStorage = USE_CLOUDINARY ? mixedCloudinaryStorage : mixedLocalStorage;
 
-export const uploadImage = multer({ 
-  storage: imageStorage, 
-  fileFilter: imageFilter, 
-  limits: { fileSize: 5 * 1024 * 1024 } 
-});
-
-export const uploadDoc = multer({ 
-  storage: docStorage, 
-  fileFilter: docFilter, 
-  limits: { fileSize: 20 * 1024 * 1024 } 
-});
-
-export const uploadMixed = multer({ 
-  storage: mixedStorage, 
-  fileFilter: mixedFilter, 
-  limits: { fileSize: 20 * 1024 * 1024 } 
-});
+export const uploadImage = multer({ storage: imageStorage, fileFilter: imageFilter, limits: { fileSize: 5 * 1024 * 1024 } });
+export const uploadDoc = multer({ storage: docStorage, fileFilter: docFilter, limits: { fileSize: 20 * 1024 * 1024 } });
+export const uploadMixed = multer({ storage: mixedStorage, fileFilter: imageFilter, limits: { fileSize: 20 * 1024 * 1024 } });
