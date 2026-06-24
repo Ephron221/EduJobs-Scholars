@@ -5,6 +5,7 @@ import { universityAPI, jobAPI, programAPI, heroImageAPI, successStoryAPI } from
 import UniversityCard from '../../components/UniversityCard';
 import JobCard from '../../components/JobCard';
 import Loader from '../../components/Loader';
+import { getAssetUrl } from '../../utils/assetUrl';
 
 type HeroImage = {
   imageUrl: string;
@@ -219,7 +220,7 @@ export default function HomePage() {
         {heroImages.length > 0 && (
           <div className="absolute inset-0">
             <img
-              src={heroImages[currentHeroImage]?.imageUrl}
+              src={getAssetUrl(heroImages[currentHeroImage]?.imageUrl)}
               alt={heroImages[currentHeroImage]?.altText || 'Hero Image'}
               className="w-full h-full object-cover opacity-10 mix-blend-luminosity"
             />
@@ -421,7 +422,7 @@ export default function HomePage() {
                     <div key={story._id} className="glass-card-hover p-6 group">
                       <div className="flex items-start gap-4 mb-4">
                         <img
-                          src={story.profileImage}
+                          src={getAssetUrl(story.profileImage)}
                           alt={story.fullName}
                           className="w-12 h-12 rounded-full object-cover border-2 border-cyan-500/20"
                         />

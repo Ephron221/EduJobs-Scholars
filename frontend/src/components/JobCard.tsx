@@ -19,6 +19,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { applicationAPI, userAPI } from '../api';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
+import { getAssetUrl } from '../utils/assetUrl';
 
 interface Job {
   _id: string;
@@ -77,7 +78,7 @@ export default function JobCard({ job, isSaved, onSaveToggle }: Props) {
   const [assistanceForm, setAssistanceForm] = useState({ fullName: '', phone: '', email: '' });
   const isExpired = new Date(job.deadline) < new Date();
   const type = typeConfig[job.type] || typeConfig.job;
-  const applicationUrl = job.documents?.[0]?.url || job.link;
+  const applicationUrl = getAssetUrl(job.documents?.[0]?.url) || job.link;
   const overview = job.description || job.requirements;
   const postedDate = job.postedAt ? format(new Date(job.postedAt), 'dd MMM yyyy') : 'Recently posted';
   const avatarText = initialsFrom(job.company || job.title) || 'OP';
@@ -171,7 +172,7 @@ export default function JobCard({ job, isSaved, onSaveToggle }: Props) {
       <div className="relative h-44 w-full overflow-hidden bg-gradient-to-br from-cyan-50 to-gray-100 dark:from-cyan-950/40 dark:to-gray-950">
         {job.images && job.images.length > 0 ? (
           <img
-            src={job.images[0]}
+            src={getAssetUrl(job.images[0])}
             alt={job.title}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />

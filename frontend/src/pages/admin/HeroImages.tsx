@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, Upload, X } from 'lucide-react';
 import { heroImageAPI } from '../../api';
 import Loader from '../../components/Loader';
 import Modal from '../../components/Modal';
+import { getAssetUrl } from '../../utils/assetUrl';
 
 interface HeroImage {
   _id: string;
@@ -131,7 +132,7 @@ export default function HeroImages() {
           <div key={image._id} className="glass-card p-4">
             <div className="aspect-video mb-4 overflow-hidden rounded-lg">
               <img
-                src={image.imageUrl}
+                src={getAssetUrl(image.imageUrl)}
                 alt={image.altText}
                 className="w-full h-full object-cover"
               />

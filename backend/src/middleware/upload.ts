@@ -14,15 +14,15 @@ const hasCloudinaryConfig = Boolean(
   process.env.CLOUDINARY_API_SECRET
 );
 
-// Determine if we should use Cloudinary or Local Storage
-const USE_CLOUDINARY = process.env.NODE_ENV === 'production' ? hasCloudinaryConfig : false;
+// In production, we MUST use Cloudinary. Local storage will fail on Vercel.
+const USE_CLOUDINARY = process.env.NODE_ENV === 'production' || hasCloudinaryConfig;
 
 const uploadRoot = path.join(process.cwd(), 'uploads');
 const imageDir = path.join(uploadRoot, 'images');
 const documentDir = path.join(uploadRoot, 'documents');
 
-// ONLY create local directories if NOT using Cloudinary (Development)
-if (!USE_CLOUDINARY) {
+// ONLY create local directories if NOT in production (Development fallback)
+if (process.env.NODE_ENV !== 'production' && !hasCloudinaryConfig) {
   if (!fs.existsSync(imageDir)) fs.mkdirSync(imageDir, { recursive: true });
   if (!fs.existsSync(documentDir)) fs.mkdirSync(documentDir, { recursive: true });
 }
@@ -33,53 +33,20 @@ const safeFilename = (file: Express.Multer.File): string => {
   return `${Date.now()}-${Math.round(Math.random() * 1e9)}-${base}${ext}`;
 };
 
-// Cloudinary storage configuration
-const imageCloudinaryStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'edujobs-scholars/images',
-    resource_type: 'auto',
-    format: async (_req: any, file: Express.Multer.File) => {
-      const ext = path.extname(file.originalname).slice(1);
-      return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? ext : 'jpg';
-    },
-  } as any,
-});
-
-const docCloudinaryStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'edujobs-scholars/documents',
-    resource_type: 'raw',
-    format: async (_req: any, file: Express.Multer.File) => 'pdf',
-  } as any,
-});
-
+// Mixed Cloudinary storage handles both PDFs and Images
 const mixedCloudinaryStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: (_req: any, file: Express.Multer.File) => {
-      const isPdf = file.mimetype === 'application/pdf' || path.extname(file.originalname).toLowerCase() === '.pdf';
-      return isPdf ? 'edujobs-scholars/documents' : 'edujobs-scholars/images';
-    },
-    resource_type: (_req: any, file: Express.Multer.File) => {
-      const isPdf = file.mimetype === 'application/pdf' || path.extname(file.originalname).toLowerCase() === '.pdf';
-      return isPdf ? 'raw' : 'auto';
-    },
-  } as any,
+  params: async (_req: any, file: Express.Multer.File) => {
+    const isPdf = file.mimetype === 'application/pdf' || path.extname(file.originalname).toLowerCase() === '.pdf';
+    return {
+      folder: isPdf ? 'edujobs-scholars/documents' : 'edujobs-scholars/images',
+      resource_type: isPdf ? 'raw' : 'auto',
+      public_id: safeFilename(file).split('.')[0], // Cloudinary adds extension
+    };
+  },
 });
 
-// Local storage configuration (Only for dev)
-const imageLocalStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, imageDir),
-  filename: (_req, file, cb) => cb(null, safeFilename(file)),
-});
-
-const docLocalStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, documentDir),
-  filename: (_req, file, cb) => cb(null, safeFilename(file)),
-});
-
+// Local storage configuration (Only for local dev)
 const mixedLocalStorage = multer.diskStorage({
   destination: (_req, file, cb) => {
     const isPdf = file.mimetype === 'application/pdf' || path.extname(file.originalname).toLowerCase() === '.pdf';
@@ -88,29 +55,25 @@ const mixedLocalStorage = multer.diskStorage({
   filename: (_req, file, cb) => cb(null, safeFilename(file)),
 });
 
-// File type validators
-const imageFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowed = /jpeg|jpg|png|gif|webp/i;
-  if (allowed.test(path.extname(file.originalname)) && allowed.test(file.mimetype)) {
+const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const allowedExts = /jpeg|jpg|png|gif|webp|pdf/i;
+  const isAllowed = allowedExts.test(path.extname(file.originalname)) || allowedExts.test(file.mimetype);
+  
+  if (isAllowed) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed (jpg, png, gif, webp)'));
+    cb(new Error('File type not supported. Please upload images or PDFs.'));
   }
 };
 
-const docFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  if (path.extname(file.originalname).toLowerCase() === '.pdf' || file.mimetype === 'application/pdf') {
-    cb(null, true);
-  } else {
-    cb(new Error('Only PDF files are allowed'));
-  }
-};
+const storage = USE_CLOUDINARY ? mixedCloudinaryStorage : mixedLocalStorage;
 
-// Selection logic
-const imageStorage = USE_CLOUDINARY ? imageCloudinaryStorage : imageLocalStorage;
-const docStorage = USE_CLOUDINARY ? docCloudinaryStorage : docLocalStorage;
-const mixedStorage = USE_CLOUDINARY ? mixedCloudinaryStorage : mixedLocalStorage;
+export const uploadMixed = multer({ 
+  storage: storage, 
+  fileFilter: fileFilter, 
+  limits: { fileSize: 20 * 1024 * 1024 } 
+});
 
-export const uploadImage = multer({ storage: imageStorage, fileFilter: imageFilter, limits: { fileSize: 5 * 1024 * 1024 } });
-export const uploadDoc = multer({ storage: docStorage, fileFilter: docFilter, limits: { fileSize: 20 * 1024 * 1024 } });
-export const uploadMixed = multer({ storage: mixedStorage, fileFilter: imageFilter, limits: { fileSize: 20 * 1024 * 1024 } });
+// Alias for backwards compatibility
+export const uploadImage = uploadMixed;
+export const uploadDoc = uploadMixed;

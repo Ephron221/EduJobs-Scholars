@@ -7,6 +7,7 @@ import StatusBadge from '../../components/StatusBadge';
 import Loader from '../../components/Loader';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { getAssetUrl } from '../../utils/assetUrl';
 
 interface StudentDocument {
   name: string;
@@ -136,7 +137,10 @@ export default function StudentRecords() {
       setPreviewLoading(true);
       setPreviewError(null);
       try {
-        const response = await fetch(selectedPreview.url);
+        const assetUrl = getAssetUrl(selectedPreview.url);
+        if (!assetUrl) throw new Error('Invalid URL');
+        
+        const response = await fetch(assetUrl);
         if (!response.ok) throw new Error('Unable to load preview');
         const blob = await response.blob();
         objectUrl = URL.createObjectURL(blob);
@@ -166,19 +170,6 @@ export default function StudentRecords() {
       : doc
     );
 
-  const getExistingDocNames = (student: Student | null, category: 'nationalId' | 'passportPhoto' | 'diploma' | 'other') => {
-    if (!student?.documents) return null;
-    const docs = normalizeDocuments(student.documents).filter((doc) => doc.category === category);
-    return docs.length ? docs.map((doc) => doc.name).join(', ') : null;
-  };
-
-  const categoryLabels: Record<string, string> = {
-    nationalId: 'National ID / Passport',
-    passportPhoto: 'Passport Photo',
-    diploma: 'Diploma / Certificate',
-    other: 'Other Documents',
-  };
-
   const refreshStudent = async (studentId: string) => {
     try {
       const res = await studentAPI.getById(studentId);
@@ -203,7 +194,8 @@ export default function StudentRecords() {
   };
 
   const openFileInNewTab = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    const assetUrl = getAssetUrl(url);
+    if (assetUrl) window.open(assetUrl, '_blank', 'noopener,noreferrer');
   };
 
   const updateDocumentName = async () => {
@@ -321,7 +313,7 @@ export default function StudentRecords() {
     setForm({
       ...s,
       trackingCode: s.trackingCode || '',
-      password: s.password || '', // Display existing password/PIN if available
+      password: s.password || '', 
       dateOfBirth: s.dateOfBirth.split('T')[0],
       admissionDate: s.admissionDate.split('T')[0],
     });
@@ -341,7 +333,7 @@ export default function StudentRecords() {
     }
   };
 
-  const previewSrc = selectedPreview ? (previewBlobUrl || selectedPreview.url) : '';
+  const previewSrc = selectedPreview ? (previewBlobUrl || getAssetUrl(selectedPreview.url)) : '';
   const canPreviewSelectedImage = selectedPreview ? isPreviewableImage(selectedPreview) : false;
   const canPreviewSelectedPdf = selectedPreview ? isPreviewablePdf(selectedPreview) : false;
 
@@ -351,7 +343,7 @@ export default function StudentRecords() {
     try {
       let studentId: string | null = null;
       if (editItem) {
-        const { password, ...updateData } = form; // Don't send empty password on update
+        const { password, ...updateData } = form; 
         await studentAPI.update(editItem._id, updateData);
         studentId = editItem._id;
         toast.success('Student updated!');
@@ -368,8 +360,8 @@ export default function StudentRecords() {
       setModalOpen(false);
       setDocumentFiles({});
       fetchStudents();
-    } catch {
-      toast.error('Failed to save student');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to save student');
     }
     setSaving(false);
   };

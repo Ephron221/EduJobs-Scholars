@@ -16,6 +16,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { applicationAPI, userAPI } from '../api';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
+import { getAssetUrl } from '../utils/assetUrl';
 
 interface University {
   _id: string;
@@ -45,7 +46,7 @@ export default function UniversityCard({ university, programCount, isSaved, onSa
   const [assistanceForm, setAssistanceForm] = useState({ fullName: '', phone: '', email: '' });
   const initials = university.name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
   const detailsUrl = `/universities/${university._id}`;
-  const applicationUrl = university.documents?.[0]?.url || university.website || detailsUrl;
+  const applicationUrl = getAssetUrl(university.documents?.[0]?.url) || university.website || detailsUrl;
   const postedDate = university.createdAt
     ? new Date(university.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
     : 'Recently posted';
@@ -150,7 +151,7 @@ export default function UniversityCard({ university, programCount, isSaved, onSa
       <div className="relative h-44 w-full overflow-hidden bg-gradient-to-br from-cyan-50 to-gray-100 dark:from-cyan-950/40 dark:to-gray-950">
         {university.images && university.images.length > 0 ? (
           <img
-            src={university.images[0]}
+            src={getAssetUrl(university.images[0])}
             alt={university.name}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
@@ -159,7 +160,7 @@ export default function UniversityCard({ university, programCount, isSaved, onSa
             <div>
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-500/20 bg-cyan-500/10 text-xl font-black text-cyan-600 dark:text-cyan-300">
                 {university.logoUrl ? (
-                  <img src={university.logoUrl} alt={university.name} className="h-12 w-12 rounded object-contain" />
+                  <img src={getAssetUrl(university.logoUrl)} alt={university.name} className="h-12 w-12 rounded object-contain" />
                 ) : initials}
               </div>
               <p className="text-sm font-bold uppercase tracking-wide text-gray-700 dark:text-gray-200">{university.country}</p>
@@ -170,7 +171,7 @@ export default function UniversityCard({ university, programCount, isSaved, onSa
         <div className="absolute bottom-4 left-4 right-4 flex items-center gap-3">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white p-1 shadow-lg dark:bg-gray-800">
             {university.logoUrl ? (
-              <img src={university.logoUrl} alt={university.name} className="h-full w-full rounded-lg object-contain" />
+              <img src={getAssetUrl(university.logoUrl)} alt={university.name} className="h-full w-full rounded-lg object-contain" />
             ) : (
               <span className="text-sm font-black text-cyan-600 dark:text-cyan-400">{initials}</span>
             )}
