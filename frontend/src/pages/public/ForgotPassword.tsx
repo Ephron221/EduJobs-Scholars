@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import api from '../../services/api';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
@@ -17,7 +18,8 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      await api.post('/auth/forgot-password', { email });
+      const res = await api.post('/auth/forgot-password', { email });
+      toast.success(res.data.message || 'Reset code sent to your email.');
       navigate(`/verify-otp?email=${encodeURIComponent(email)}&type=reset`);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to send reset code');
@@ -39,7 +41,7 @@ const ForgotPassword = () => {
                 <Mail size={32} />
               </div>
               <h2 className="text-3xl font-black mb-3 text-gray-900 dark:text-white tracking-tight">Forgot <span className="text-cyan-500">Password?</span></h2>
-              <p className="text-gray-500 dark:text-gray-400 font-medium">Enter your email and we'll send you a 6-digit verification code.</p>
+              <p className="text-gray-500 dark:text-gray-400 font-medium">Enter your email and we'll send you a 6-character verification code.</p>
             </div>
 
             {error && (

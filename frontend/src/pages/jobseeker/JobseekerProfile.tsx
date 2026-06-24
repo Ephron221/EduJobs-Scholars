@@ -5,6 +5,7 @@ import { authAPI } from '../../api';
 import StudentLayout from './JobseekerLayout';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { getAssetUrl } from '../../utils/assetUrl';
 
 export default function JobseekerProfile() {
   const { user, updateUser } = useAuth();
@@ -74,7 +75,7 @@ export default function JobseekerProfile() {
           <div className="relative flex-shrink-0">
             {avatarPreview || user?.avatar ? (
               <img
-                src={avatarPreview || user?.avatar}
+                src={avatarPreview || getAssetUrl(user?.avatar)}
                 alt="Profile"
                 className="w-20 h-20 rounded-2xl object-cover border border-cyan-200"
               />

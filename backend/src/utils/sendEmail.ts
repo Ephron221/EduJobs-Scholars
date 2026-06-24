@@ -8,23 +8,32 @@ interface EmailOptions {
 }
 
 const sendEmail = async (options: EmailOptions) => {
+  const { EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS } = process.env;
+
+  if (!EMAIL_HOST || !EMAIL_USER || !EMAIL_PASS) {
+    throw new Error('Email service is not configured. Check EMAIL_HOST, EMAIL_USER, and EMAIL_PASS.');
+  }
+
+  const port = parseInt(EMAIL_PORT || '587', 10);
   const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: parseInt(process.env.EMAIL_PORT || '587'),
+    host: EMAIL_HOST,
+    port,
+    secure: port === 465,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: EMAIL_USER,
+      pass: EMAIL_PASS,
     },
   });
 
   const mailOptions = {
-    from: `"EduJobs Scholars" <${process.env.EMAIL_USER}>`,
+    from: `"EduJobs Scholars" <${EMAIL_USER}>`,
     to: options.email,
     subject: options.subject,
     text: options.message,
     html: options.html,
   };
 
+  await transporter.verify();
   await transporter.sendMail(mailOptions);
 };
 

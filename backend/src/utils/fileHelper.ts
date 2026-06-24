@@ -5,15 +5,23 @@
 export const getFileUrl = (file: Express.Multer.File | undefined, isPdf: boolean = false): string | undefined => {
   if (!file) return undefined;
 
-  // Cloudinary storage provides 'path' property with full URL
-  if ((file as any).path) {
-    return (file as any).path;
-  }
-
+  // Cloudinary storage can expose secure_url/url/path depending on adapter version.
+  const cloudinaryFile = file as Express.Multer.File & {
+    secure_url?: string;
+    url?: string;
+    path?: string;
+  };
   // Local storage fallback (for development)
   if (file.filename) {
-    const folder = isPdf ? 'documents' : 'images';
+    const destination = (file as Express.Multer.File & { destination?: string }).destination || '';
+    const folder = isPdf || destination.replace(/\\/g, '/').endsWith('/documents') ? 'documents' : 'images';
     return `/uploads/${folder}/${file.filename}`;
+  }
+
+  if (cloudinaryFile.secure_url) return cloudinaryFile.secure_url;
+  if (cloudinaryFile.url) return cloudinaryFile.url;
+  if (cloudinaryFile.path && /^https?:\/\//i.test(cloudinaryFile.path)) {
+    return cloudinaryFile.path;
   }
 
   return undefined;

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Bell, User, LogOut, BookOpen, Briefcase, GraduationCap, LayoutDashboard, Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { getAssetUrl } from '../utils/assetUrl';
 import { useNotifications } from '../contexts/NotificationContext';
 import NotificationDropdown from './NotificationDropdown';
 import ThemeToggle from './ThemeToggle';
@@ -114,7 +115,7 @@ export default function Navbar() {
                   >
                     {user?.avatar ? (
                       <img
-                        src={user.avatar}
+                        src={getAssetUrl(user.avatar)}
                         alt={user.name}
                         className="w-7 h-7 rounded-full object-cover"
                       />

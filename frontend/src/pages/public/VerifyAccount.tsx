@@ -123,7 +123,7 @@ const VerifyAccount = () => {
                   </div>
                   <h2 className="text-3xl font-black mb-3 text-gray-900 dark:text-white tracking-tight">Enter <span className="text-cyan-500">Code</span></h2>
                   <p className="text-gray-500 dark:text-gray-400 font-medium">
-                    Please enter the 6-digit code sent to <span className="text-gray-900 dark:text-white font-bold">{email}</span>
+                    Please enter the 6-character code sent to <span className="text-gray-900 dark:text-white font-bold">{email}</span>
                   </p>
                 </div>
 
@@ -136,7 +136,7 @@ const VerifyAccount = () => {
 
                 <form onSubmit={handleVerify} className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300 ml-1 text-center block">6-Digit Verification Code</label>
+                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300 ml-1 text-center block">6-Character Verification Code</label>
                     <input
                       type="text"
                       required
@@ -144,7 +144,7 @@ const VerifyAccount = () => {
                       className="w-full bg-gray-50 dark:bg-black/50 border border-gray-100 dark:border-zinc-800 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 text-gray-900 dark:text-white px-4 py-4 rounded-2xl outline-none transition-all duration-300 font-black text-center text-3xl tracking-[0.5em]"
                       placeholder="000000"
                       value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                      onChange={(e) => setOtp(e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase())}
                     />
                   </div>
 

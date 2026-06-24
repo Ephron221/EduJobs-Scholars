@@ -5,6 +5,7 @@ import {
   ClipboardList, Bell, FileText, LogOut, ChevronRight, Shield, Home, MessageSquare, Menu, X
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { getAssetUrl } from '../../utils/assetUrl';
 import ThemeToggle from '../../components/ThemeToggle';
 import clsx from 'clsx';
 
@@ -118,7 +119,7 @@ export default function AdminLayout({ children, title }: { children: ReactNode; 
                 className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-white/10 hover:border-cyan-500/30 transition-all duration-200"
               >
                 {user?.avatar ? (
-                  <img src={user.avatar} alt={user.name} className="w-9 h-9 rounded-full object-cover" />
+                  <img src={getAssetUrl(user.avatar)} alt={user.name} className="w-9 h-9 rounded-full object-cover" />
                 ) : (
                   <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-black font-bold text-sm">
                     {user?.name.charAt(0).toUpperCase()}

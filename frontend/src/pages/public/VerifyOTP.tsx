@@ -65,9 +65,9 @@ const VerifyOTP = () => {
     setResending(true);
     setError('');
     try {
-      await api.post('/auth/resend-otp', { email, type });
+      const res = await api.post('/auth/resend-otp', { email, type });
       setTimer(60);
-      toast.success('New code sent to your email!');
+      toast.success(res.data.message || 'New code sent to your email.');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to resend code');
     } finally {
@@ -91,7 +91,7 @@ const VerifyOTP = () => {
                 Verify <span className="text-cyan-500">Code</span>
               </h2>
               <p className="text-gray-500 dark:text-gray-400 font-medium">
-                We've sent a 6-digit code to <span className="text-gray-900 dark:text-white font-bold">{email}</span>
+                We've sent a 6-character code to <span className="text-gray-900 dark:text-white font-bold">{email}</span>
               </p>
             </div>
 
@@ -104,7 +104,7 @@ const VerifyOTP = () => {
 
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 ml-1 text-center block">Enter 6-Digit Code</label>
+                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 ml-1 text-center block">Enter 6-Character Code</label>
                 <input
                   type="text"
                   required
@@ -112,7 +112,7 @@ const VerifyOTP = () => {
                   className="w-full bg-gray-50 dark:bg-black/50 border border-gray-100 dark:border-zinc-800 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 text-gray-900 dark:text-white px-4 py-4 rounded-2xl outline-none transition-all duration-300 font-black text-center text-3xl tracking-[0.5em]"
                   placeholder="000000"
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                  onChange={(e) => setOtp(e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase())}
                 />
               </div>
 

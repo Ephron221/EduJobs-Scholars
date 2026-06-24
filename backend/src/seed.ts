@@ -4,6 +4,9 @@ import University from './models/University';
 import Program from './models/Program';
 import Job from './models/Job';
 import Guidance from './models/Guidance';
+import User from './models/User';
+import HeroImage from './models/HeroImage';
+import SuccessStory from './models/SuccessStory';
 
 dotenv.config();
 
@@ -19,6 +22,18 @@ const seedData = async () => {
     await Program.deleteMany({});
     await Job.deleteMany({});
     await Guidance.deleteMany({});
+    await HeroImage.deleteMany({});
+    await SuccessStory.deleteMany({});
+    await User.deleteMany({ email: 'esront21@gmail.com' });
+
+    await User.create({
+      name: 'EduJobs Admin',
+      email: 'esront21@gmail.com',
+      password: 'Admin123!',
+      role: 'admin',
+      isVerified: true,
+      isActive: true,
+    });
 
     // Seed Universities
     const uni1 = await University.create({
@@ -26,7 +41,8 @@ const seedData = async () => {
       country: 'Rwanda',
       website: 'https://ur.ac.rw',
       description: 'The largest higher education institution in Rwanda, offering a wide range of programs across multiple colleges.',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/1f/University_of_Rwanda_logo.png/220px-University_of_Rwanda_logo.png'
+      logoUrl: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/1f/University_of_Rwanda_logo.png/220px-University_of_Rwanda_logo.png',
+      featured: true
     });
 
     const uni2 = await University.create({
@@ -34,7 +50,8 @@ const seedData = async () => {
       country: 'Rwanda',
       website: 'https://www.africa.engineering.cmu.edu',
       description: 'A world-class engineering school offering masters degrees in IT and Electrical and Computer Engineering.',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Carnegie_Mellon_University_wordmark.svg/1200px-Carnegie_Mellon_University_wordmark.svg.png'
+      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Carnegie_Mellon_University_wordmark.svg/1200px-Carnegie_Mellon_University_wordmark.svg.png',
+      featured: true
     });
 
     // Seed Programs
@@ -68,7 +85,11 @@ const seedData = async () => {
         requirements: 'Knowledge of React, Node.js and basic database management.',
         deadline: new Date('2025-05-20'),
         link: 'https://irembo.com/careers',
-        location: 'Kigali, Rwanda'
+        location: 'Kigali, Rwanda',
+        fieldOfStudy: 'Software Engineering',
+        salary: 'Competitive',
+        description: 'Build and maintain citizen-facing digital services.',
+        featured: true
       },
       {
         title: 'Digital Marketing Intern',
@@ -77,7 +98,55 @@ const seedData = async () => {
         requirements: 'Recent graduate in Marketing or Communication. Passion for social media.',
         deadline: new Date('2025-04-10'),
         link: 'https://mtn.co.rw/careers',
-        location: 'Kigali, Rwanda'
+        location: 'Kigali, Rwanda',
+        fieldOfStudy: 'Marketing',
+        salary: 'Internship stipend',
+        description: 'Support campaign planning, content creation, and reporting.',
+        featured: true
+      }
+    ]);
+
+    await HeroImage.create([
+      {
+        imageUrl: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1600&q=80',
+        altText: 'Graduates celebrating on campus',
+        category: 'graduation',
+        university: 'University of Rwanda',
+        order: 1,
+        isActive: true
+      },
+      {
+        imageUrl: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1600&q=80',
+        altText: 'Young professionals collaborating at work',
+        category: 'workers',
+        country: 'Rwanda',
+        order: 2,
+        isActive: true
+      }
+    ]);
+
+    await SuccessStory.create([
+      {
+        type: 'student',
+        fullName: 'Aline Uwase',
+        profileImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600&q=80',
+        howTheyKnew: 'I found EduJobs Scholars while searching for scholarship guidance.',
+        howHelped: 'The platform helped me compare programs and prepare my application documents.',
+        university: 'University of Rwanda',
+        country: 'Rwanda',
+        order: 1,
+        isActive: true
+      },
+      {
+        type: 'worker',
+        fullName: 'Jean Niyonsenga',
+        profileImage: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80',
+        howTheyKnew: 'A friend shared a job opportunity listed on EduJobs Scholars.',
+        howHelped: 'I used the guidance resources to improve my CV and track applications.',
+        jobTitle: 'Junior Web Developer',
+        country: 'Rwanda',
+        order: 2,
+        isActive: true
       }
     ]);
 
@@ -98,6 +167,7 @@ const seedData = async () => {
     ]);
 
     console.log('Database seeded successfully!');
+    console.log('Admin login: esront21@gmail.com / Admin123!');
     process.exit();
   } catch (error) {
     console.error('Error seeding database:', error);

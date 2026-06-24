@@ -27,7 +27,7 @@ const Login = () => {
       }
       window.location.reload(); // Quick fix to update Navbar
     } catch (err: any) {
-      setError(err.response?.data?.msg || 'An error occurred during login');
+      setError(err.response?.data?.message || 'An error occurred during login');
     } finally {
       setLoading(false);
     }

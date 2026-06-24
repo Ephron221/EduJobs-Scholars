@@ -10,14 +10,27 @@ import { getFileUrl } from '../utils/fileHelper';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-const generateOtp = (): string => crypto.randomInt(100000, 1000000).toString();
-const hashOtp = (otp: string): string => crypto.createHash('sha256').update(`${getJwtSecret()}:${otp}`).digest('hex');
+const OTP_LENGTH = 6;
+const OTP_CHARACTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+const generateOtp = (): string => {
+  let otp = '';
+  for (let i = 0; i < OTP_LENGTH; i += 1) {
+    otp += OTP_CHARACTERS[crypto.randomInt(0, OTP_CHARACTERS.length)];
+  }
+  return otp;
+};
+
+const normalizeOtp = (otp: string): string => otp.trim().toUpperCase();
+const hashOtp = (otp: string): string => crypto.createHash('sha256').update(`${getJwtSecret()}:${normalizeOtp(otp)}`).digest('hex');
 
 const generateToken = (id: string): string => {
   return jwt.sign({ id }, getJwtSecret(), {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   } as jwt.SignOptions);
 };
+
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -55,7 +68,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         </div>
         <h2 style="color: #0ea5e9; text-align: center;">Welcome to EduJobs Scholars!</h2>
         <p>Hello ${user.name},</p>
-        <p>Thank you for registering. Please use the following 6-digit code to verify your account:</p>
+        <p>Thank you for registering. Please use the following 6-character code to verify your account:</p>
         <div style="text-align: center; margin: 30px 0;">
           <div style="background-color: #f8fafc; color: #0ea5e9; padding: 20px; border-radius: 12px; border: 2px dashed #0ea5e9; font-size: 32px; font-weight: bold; letter-spacing: 8px; display: inline-block;">
             ${verificationCode}
@@ -133,13 +146,25 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
 
     if (name) updateFields.name = name;
     if (email) updateFields.email = email;
-    if (req.file) updateFields.avatar = getFileUrl(req.file, false);
+    if (req.file) {
+      const avatarUrl = getFileUrl(req.file, false);
+      if (!avatarUrl) {
+        res.status(400).json({ message: 'Profile image upload failed. Please try another image.' });
+        return;
+      }
+      updateFields.avatar = avatarUrl;
+    }
 
     const user = await User.findByIdAndUpdate(
       req.user?._id,
       updateFields,
       { new: true, runValidators: true }
     );
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
 
     res.json({ message: 'Profile updated successfully', user });
   } catch (error) {
@@ -169,6 +194,10 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     const user = await User.findOne({ email });
 
     if (!user) {
+      if (isDevelopment) {
+        res.status(404).json({ message: 'No account found with that email address.' });
+        return;
+      }
       res.status(200).json({ message: 'If an account exists, a verification code has been sent.' });
       return;
     }
@@ -193,7 +222,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
         <h2 style="color: #0ea5e9; text-align: center;">Verification Code</h2>
         <p>Hello ${user.name},</p>
         <p>You are receiving this email because you (or someone else) has requested the reset of a password for your EduJobs Scholars account.</p>
-        <p>Use the following 6-digit code to verify your request. This code is valid for 10 minutes.</p>
+        <p>Use the following 6-character code to verify your request. This code is valid for 10 minutes.</p>
         <div style="text-align: center; margin: 30px 0;">
           <div style="background-color: #f8fafc; color: #0ea5e9; padding: 20px; border-radius: 12px; border: 2px dashed #0ea5e9; font-size: 32px; font-weight: bold; letter-spacing: 8px; display: inline-block;">
             ${otp}
@@ -219,7 +248,12 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       user.resetPasswordExpire = undefined;
       await user.save();
 
-      res.status(500).json({ message: 'Email could not be sent' });
+      console.error('Password reset email failed to send:', err);
+      res.status(500).json({
+        message: isDevelopment
+          ? `Email could not be sent: ${err instanceof Error ? err.message : 'Unknown email error'}`
+          : 'Email could not be sent',
+      });
     }
   } catch (error) {
     res.status(500).json({ message: 'Error in forgotPassword', error });
@@ -286,6 +320,10 @@ export const resendOTP = async (req: Request, res: Response): Promise<void> => {
     const user = await User.findOne({ email });
 
     if (!user) {
+      if (isDevelopment) {
+        res.status(404).json({ message: 'No account found with that email address.' });
+        return;
+      }
       res.json({ message: 'If an account exists, a new code has been sent.' });
       return;
     }
@@ -312,7 +350,7 @@ export const resendOTP = async (req: Request, res: Response): Promise<void> => {
         </div>
         <h2 style="color: #0ea5e9; text-align: center;">${type === 'verification' ? 'Account Verification' : 'Password Reset Code'}</h2>
         <p>Hello ${user.name},</p>
-        <p>Use the following 6-digit code for your request:</p>
+        <p>Use the following 6-character code for your request:</p>
         <div style="text-align: center; margin: 30px 0;">
           <div style="background-color: #f8fafc; color: #0ea5e9; padding: 20px; border-radius: 12px; border: 2px dashed #0ea5e9; font-size: 32px; font-weight: bold; letter-spacing: 8px; display: inline-block;">
             ${otp}
@@ -324,14 +362,32 @@ export const resendOTP = async (req: Request, res: Response): Promise<void> => {
       </div>
     `;
 
-    await sendEmail({
-      email: user.email,
-      subject,
-      message: `Your code is: ${otp}`,
-      html
-    });
+    try {
+      await sendEmail({
+        email: user.email,
+        subject,
+        message: `Your code is: ${otp}`,
+        html
+      });
 
-    res.json({ message: 'If an account exists, a new code has been sent.' });
+      res.json({ message: 'New code sent to your email.' });
+    } catch (err) {
+      if (type === 'verification') {
+        user.verificationCode = undefined;
+        user.verificationExpire = undefined;
+      } else {
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+      }
+      await user.save();
+
+      console.error('OTP email failed to send:', err);
+      res.status(500).json({
+        message: isDevelopment
+          ? `Email could not be sent: ${err instanceof Error ? err.message : 'Unknown email error'}`
+          : 'Email could not be sent',
+      });
+    }
   } catch (error) {
     res.status(500).json({ message: 'Error in resendOTP', error });
   }
