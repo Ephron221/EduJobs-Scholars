@@ -17,7 +17,8 @@ export default function ServicesPage() {
       title: "Application Support Services",
       features: [
         "University and college applications (Rwanda and international)",
-        "Scholarship applications and self-sponsored"
+        "Scholarship, Loan applications and self-sponsored",
+        "Mifotra applications and other government applications",
       ]
     },
     {
