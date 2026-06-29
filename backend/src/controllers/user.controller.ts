@@ -100,3 +100,79 @@ export const getSavedOpportunities = async (req: AuthRequest, res: Response): Pr
     res.status(500).json({ message: 'Failed to get saved opportunities', error });
   }
 };
+
+export const getUserStats = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+
+    const [
+      totalUsers,
+      studentCount,
+      jobseekerCount,
+      adminCount,
+      activeCount,
+      disabledCount,
+      verifiedCount,
+      unverifiedCount,
+      newThisMonth,
+      newLastMonth,
+    ] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ role: 'student' }),
+      User.countDocuments({ role: 'jobseeker' }),
+      User.countDocuments({ role: 'admin' }),
+      User.countDocuments({ isActive: true }),
+      User.countDocuments({ isActive: false }),
+      User.countDocuments({ isVerified: true }),
+      User.countDocuments({ isVerified: false }),
+      User.countDocuments({ createdAt: { $gte: startOfMonth } }),
+      User.countDocuments({ createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth } }),
+    ]);
+
+    const growthPercent = newLastMonth > 0
+      ? Math.round(((newThisMonth - newLastMonth) / newLastMonth) * 100)
+      : newThisMonth > 0 ? 100 : 0;
+
+    res.json({
+      totalUsers,
+      studentCount,
+      jobseekerCount,
+      adminCount,
+      activeCount,
+      disabledCount,
+      verifiedCount,
+      unverifiedCount,
+      newThisMonth,
+      newLastMonth,
+      growthPercent,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to get user stats', error });
+  }
+};
+
+export const updateUserRole = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { role } = req.body;
+    const allowedRoles = ['student', 'admin', 'jobseeker'];
+    if (!role || !allowedRoles.includes(role)) {
+      res.status(400).json({ message: 'Invalid role. Must be student, jobseeker, or admin.' });
+      return;
+    }
+
+    // Prevent admin from demoting themselves
+    if (req.user?._id.toString() === req.params.id && role !== 'admin') {
+      res.status(403).json({ message: 'You cannot change your own role.' });
+      return;
+    }
+
+    const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true });
+    if (!user) { res.status(404).json({ message: 'User not found' }); return; }
+    res.json({ message: `Role updated to ${role}`, user });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update user role', error });
+  }
+};

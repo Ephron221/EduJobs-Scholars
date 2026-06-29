@@ -57,10 +57,12 @@ export const applicationAPI = {
 
 export const userAPI = {
   getAll: (params?: Record<string, unknown>) => api.get('/users', { params }),
+  getStats: () => api.get('/users/stats'),
   getById: (id: string) => api.get(`/users/${id}`),
   update: (id: string, data: unknown) => api.put(`/users/${id}`, data),
   delete: (id: string) => api.delete(`/users/${id}`),
   toggleStatus: (id: string) => api.patch(`/users/${id}/toggle-status`),
+  updateRole: (id: string, role: string) => api.patch(`/users/${id}/role`, { role }),
   saveOpportunity: (data: { id: string; type: string }) => api.post('/users/save-opportunity', data),
   unsaveOpportunity: (oppId: string) => api.delete(`/users/unsave-opportunity/${oppId}`),
   getSaved: () => api.get('/users/saved'),
