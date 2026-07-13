@@ -43,10 +43,19 @@ if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_UR
   allowedOrigins.push(process.env.FRONTEND_URL);
 }
 
-app.use(cors({
-  origin: allowedOrigins,
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error(`CORS blocked: ${origin}`));
+  },
   credentials: true,
-}));
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -103,9 +112,12 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
   res.status(500).json({ message: 'Internal server error', error: process.env.NODE_ENV === 'development' ? err.message : undefined });
 });
 
-app.listen(PORT, () => {
-  console.log(`\n🚀 EduJobs Scholars API running on port ${PORT}`);
-  console.log(`📚 Environment: ${process.env.NODE_ENV}`);
-});
+// Only listen when running locally — Vercel serverless handles this automatically
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`\n🚀 EduJobs Scholars API running on port ${PORT}`);
+    console.log(`📚 Environment: ${process.env.NODE_ENV}`);
+  });
+}
 
 export default app;
