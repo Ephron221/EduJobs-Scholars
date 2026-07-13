@@ -46,6 +46,7 @@ import SuccessStories from './pages/admin/SuccessStories';
 // Layout
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import UnifiedChat from './components/UnifiedChat';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -124,6 +125,7 @@ export default function App() {
             <NotificationProvider>
               <div id="app-root" className="min-h-screen transition-colors duration-300">
                 <AppRoutes />
+                <UnifiedChat />
                 <Toaster
                   position="top-right"
                   toastOptions={{

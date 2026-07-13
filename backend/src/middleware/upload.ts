@@ -21,8 +21,8 @@ const uploadRoot = path.join(process.cwd(), 'uploads');
 const imageDir = path.join(uploadRoot, 'images');
 const documentDir = path.join(uploadRoot, 'documents');
 
-// ONLY create local directories if NOT in production (Development fallback)
-if (process.env.NODE_ENV !== 'production' && !hasCloudinaryConfig) {
+// Always create local directories in development as a fallback
+if (process.env.NODE_ENV !== 'production') {
   if (!fs.existsSync(imageDir)) fs.mkdirSync(imageDir, { recursive: true });
   if (!fs.existsSync(documentDir)) fs.mkdirSync(documentDir, { recursive: true });
 }
@@ -38,10 +38,14 @@ const mixedCloudinaryStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (_req: any, file: Express.Multer.File) => {
     const isPdf = file.mimetype === 'application/pdf' || path.extname(file.originalname).toLowerCase() === '.pdf';
+    const filename = safeFilename(file);
     return {
       folder: isPdf ? 'edujobs-scholars/documents' : 'edujobs-scholars/images',
       resource_type: isPdf ? 'raw' : 'auto',
-      public_id: safeFilename(file).split('.')[0], // Cloudinary adds extension
+      // For raw (PDF) resources Cloudinary does NOT auto-append the extension,
+      // so we must include it in the public_id. For images, strip it so
+      // Cloudinary can optimise the format freely.
+      public_id: isPdf ? filename : filename.replace(/\.[^.]+$/, ''),
     };
   },
 });
@@ -56,13 +60,13 @@ const mixedLocalStorage = multer.diskStorage({
 });
 
 const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedExts = /jpeg|jpg|png|gif|webp|pdf/i;
+  const allowedExts = /jpeg|jpg|png|gif|webp|svg|pdf/i;
   const isAllowed = allowedExts.test(path.extname(file.originalname)) || allowedExts.test(file.mimetype);
   
   if (isAllowed) {
     cb(null, true);
   } else {
-    cb(new Error('File type not supported. Please upload images or PDFs.'));
+    cb(new Error('File type not supported. Please upload JPG, PNG, GIF, WebP, SVG, or PDF.'));
   }
 };
 

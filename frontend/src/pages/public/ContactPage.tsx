@@ -26,7 +26,7 @@ export default function ContactPage() {
     setForm((prev) => ({ ...prev, [field]: val }));
     if (field === 'phone') {
       if (!val) setPhoneError('');
-      else if (!isValidPhone(val)) setPhoneError('Enter a valid phone number (e.g. +250 780 123 456)');
+      else if (!isValidPhone(val)) setPhoneError('Enter a valid phone number (e.g. +250 787 846 344)');
       else setPhoneError('');
     }
   };
@@ -37,7 +37,7 @@ export default function ContactPage() {
     // Final phone validation before submit
     if (!form.phone) { toast.error('Phone number is required'); return; }
     if (!isValidPhone(form.phone)) {
-      setPhoneError('Enter a valid phone number (e.g. +250 780 123 456)');
+      setPhoneError('Enter a valid phone number (e.g. +250 787 846 344)');
       toast.error('Please enter a valid phone number');
       return;
     }
@@ -76,7 +76,7 @@ export default function ContactPage() {
                   <MapPin size={24} />
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Our Location</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">Kigali Innovation City<br/>Kigali, Rwanda</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Nyanza<br/>South, Rwanda</p>
               </div>
 
               <div className="glass-card p-6">
@@ -84,7 +84,7 @@ export default function ContactPage() {
                   <Mail size={24} />
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Email Us</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">support@edujobsscholars.rw<br/>partnerships@edujobsscholars.rw</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">esront21@gmail.com</p>
               </div>
 
               <div className="glass-card p-6">
@@ -92,7 +92,11 @@ export default function ContactPage() {
                   <Phone size={24} />
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Call Us</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">+250 780 000 000<br/>Mon–Fri, 8am–5pm CAT</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">+250 787 846 344<br/>Mon–Fri, 8am–5pm CAT</p>
+                <div className="mt-3 flex gap-2">
+                  <a href="tel:+250787846344" className="btn-secondary">Call +250 78 784 6344</a>
+                  <a href="https://wa.me/250787846344" target="_blank" rel="noreferrer" className="btn-ghost">WhatsApp</a>
+                </div>
               </div>
             </div>
 
@@ -122,7 +126,7 @@ export default function ContactPage() {
                       onChange={set('email')}
                       className="input-field"
                       required
-                      placeholder="john@example.com"
+                      placeholder="esron@gmail.com"
                     />
                   </div>
                 </div>

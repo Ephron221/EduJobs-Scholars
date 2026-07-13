@@ -4,28 +4,38 @@ const USE_CLOUDINARY = process.env.NODE_ENV === 'production' || process.env.CLOU
 
 export const deleteUploadedFile = async (fileUrl: string): Promise<void> => {
   try {
-    if (!USE_CLOUDINARY || !fileUrl) return;
+    if (!fileUrl) return;
 
-    // Extract public_id from Cloudinary URL
-    // URL format: https://res.cloudinary.com/{cloud_name}/image/upload/{public_id}
+    // Local file — nothing to delete via Cloudinary
+    if (!fileUrl.startsWith('http')) return;
+
+    if (!USE_CLOUDINARY) return;
+
+    // Cloudinary URL format:
+    // https://res.cloudinary.com/{cloud}/image/upload/v123/{folder}/{public_id}.ext
+    // https://res.cloudinary.com/{cloud}/raw/upload/{folder}/{public_id}.pdf
     const urlParts = fileUrl.split('/');
     const uploadIndex = urlParts.indexOf('upload');
-    
     if (uploadIndex === -1) return;
 
-    // Get everything after 'upload/' and remove extension
-    const publicIdWithExt = urlParts.slice(uploadIndex + 1).join('/');
-    const publicId = publicIdWithExt.substring(0, publicIdWithExt.lastIndexOf('.')) || publicIdWithExt;
+    // Skip optional version segment (e.g. "v1234567890")
+    let sliceFrom = uploadIndex + 1;
+    if (/^v\d+$/.test(urlParts[sliceFrom])) sliceFrom++;
 
-    // Determine resource type (raw for PDFs, image for others)
-    const isPdf = fileUrl.toLowerCase().includes('.pdf');
+    const isPdf = fileUrl.toLowerCase().endsWith('.pdf');
     const resourceType = isPdf ? 'raw' : 'image';
 
-    // Delete from Cloudinary
+    // For raw resources the public_id includes the extension; for images it does not
+    const publicIdWithExt = urlParts.slice(sliceFrom).join('/');
+    const publicId = isPdf
+      ? publicIdWithExt                                                          // keep .pdf
+      : (publicIdWithExt.lastIndexOf('.') > 0
+          ? publicIdWithExt.substring(0, publicIdWithExt.lastIndexOf('.'))
+          : publicIdWithExt);                                                    // strip extension
+
     await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
   } catch (error) {
     console.error('Error deleting file from Cloudinary:', error);
-    // Don't throw - silently fail for cleanup operations
   }
 };
 

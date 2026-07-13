@@ -48,6 +48,19 @@ interface Student {
   updatedAt: string;
 }
 
+const categoryLabels: Record<'nationalId' | 'passportPhoto' | 'diploma' | 'other', string> = {
+  nationalId: 'National ID / Passport',
+  passportPhoto: 'Passport Photo',
+  diploma: 'Diploma / Certificate',
+  other: 'Other Documents',
+};
+
+const getExistingDocNames = (student: Student | null, category: string): string => {
+  if (!student?.documents) return '';
+  const docs = student.documents.filter((d) => (d as any).category === category);
+  return docs.map((d) => (d as any).name || '').filter(Boolean).join(', ');
+};
+
 const EMPTY_FORM = {
   firstName: '',
   lastName: '',

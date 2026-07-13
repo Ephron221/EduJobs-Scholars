@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { GraduationCap, Mail, MapPin, Twitter, Linkedin, Github, ExternalLink } from 'lucide-react';
+import { GraduationCap, Mail, MapPin, Twitter, Linkedin, Github, ExternalLink, Code2, BookMarked } from 'lucide-react';
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -88,10 +88,26 @@ export default function Footer() {
           <p className="text-gray-500 dark:text-gray-400 text-sm">
             © {year} EduJobs Scholars. All rights reserved.
           </p>
-          <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
-            <span>Privacy Policy</span>
-            <span>Terms of Service</span>
-            <span>Cookie Policy</span>
+          <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+            <a
+              href="https://ephron-protifolio.vercel.app/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 hover:text-cyan-400 transition-colors group"
+            >
+              <Code2 size={13} className="group-hover:text-cyan-400" />
+              Built by Ephron
+            </a>
+            <span className="text-gray-300 dark:text-gray-700">·</span>
+            <a
+              href="https://amategekohub.vercel.app"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 hover:text-orange-400 transition-colors group"
+            >
+              <BookMarked size={13} className="group-hover:text-orange-400" />
+              Amategeko y'umuhanda
+            </a>
           </div>
         </div>
       </div>

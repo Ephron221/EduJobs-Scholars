@@ -325,6 +325,38 @@
   .animation-delay-500 { animation-delay: 0.5s; }
 }
 
+@keyframes popupIn {
+  from { opacity: 0; transform: scale(0.92) translateY(16px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0); }
+}
+
+.animate-popup-in {
+  animation: popupIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes adTicker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-33.333%); }
+}
+
+.ad-ticker {
+  animation: adTicker 18s linear infinite;
+  width: max-content;
+}
+
+.ad-ticker:hover {
+  animation-play-state: paused;
+}
+
+@keyframes adIconPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(6,182,212,0.35); }
+  50%       { box-shadow: 0 0 0 12px rgba(6,182,212,0); }
+}
+
+.ad-icon-pulse {
+  animation: adIconPulse 2.8s ease-in-out infinite;
+}
+
 @keyframes serviceOrbit {
   to {
     transform: rotate(360deg);

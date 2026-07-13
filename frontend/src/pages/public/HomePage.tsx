@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, GraduationCap, Briefcase, Users, Search, BookOpen, ChevronDown, Star, Globe, Zap, Calendar, MapPin, Clock } from 'lucide-react';
+import { ArrowRight, GraduationCap, Briefcase, Users, Search, BookOpen, ChevronDown, Star, Zap, Calendar, MapPin, Clock, X, ExternalLink, Code2, BookMarked, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { universityAPI, jobAPI, programAPI, heroImageAPI, successStoryAPI } from '../../api';
 import UniversityCard from '../../components/UniversityCard';
 import JobCard from '../../components/JobCard';
@@ -104,6 +104,51 @@ export default function HomePage() {
   const [search, setSearch] = useState('');
   const [searchType, setSearchType] = useState('all');
   const [currentHeroImage, setCurrentHeroImage] = useState(0);
+  const [showAmategekoPopup, setShowAmategekoPopup] = useState(false);
+  const [showDevCard, setShowDevCard] = useState(false);
+  const [adSlide, setAdSlide] = useState(0);
+  const adTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const ads = [
+    {
+      id: 'portfolio',
+      badge: 'Meet the Developer',
+      title: "Ephron's Portfolio",
+      desc: 'Explore the projects, skills, and story of the developer who built this platform.',
+      cta: 'View Portfolio',
+      href: 'https://ephron-protifolio.vercel.app/',
+      accent: 'cyan' as const,
+      icon: <Code2 size={28} />,
+      label: 'EP',
+      tags: ['Web Dev', 'Full Stack', 'React', 'Node.js'],
+    },
+    {
+      id: 'amategeko',
+      badge: 'Road Safety Platform',
+      title: "Amategeko y'umuhanda",
+      desc: 'Master Rwanda road laws, traffic signs, and ace your driving test with free practice tests.',
+      cta: 'Visit Amategeko Hub',
+      href: 'https://amategekohub.vercel.app',
+      accent: 'orange' as const,
+      icon: <BookMarked size={28} />,
+      label: null,
+      tags: ['Road Signs', 'Traffic Rules', 'Practice Tests', 'Free'],
+    },
+  ];
+
+  useEffect(() => {
+    adTimerRef.current = setInterval(() => setAdSlide((p) => (p + 1) % ads.length), 5000);
+    return () => { if (adTimerRef.current) clearInterval(adTimerRef.current); };
+  }, [ads.length]);
+
+  const nextAd = () => { setAdSlide((p) => (p + 1) % ads.length); if (adTimerRef.current) { clearInterval(adTimerRef.current); adTimerRef.current = setInterval(() => setAdSlide((p) => (p + 1) % ads.length), 5000); } };
+  const prevAd = () => { setAdSlide((p) => (p - 1 + ads.length) % ads.length); if (adTimerRef.current) { clearInterval(adTimerRef.current); adTimerRef.current = setInterval(() => setAdSlide((p) => (p + 1) % ads.length), 5000); } };
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowAmategekoPopup(true), 1200);
+    return () => clearTimeout(t);
+  }, []);
+
   const particlesRef = useRef<HTMLCanvasElement>(null);
   const heroIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -214,6 +259,88 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
+
+      {/* Small Hero Ad Popup — shows on every refresh */}
+      {showAmategekoPopup && (
+        <div className="fixed bottom-24 left-4 z-[9998] w-72 animate-popup-in sm:left-6" role="dialog" aria-label="Quick links">
+          <div className="overflow-hidden rounded-2xl border border-white/20 bg-white/95 dark:bg-gray-900/95 shadow-2xl shadow-black/30 backdrop-blur-md">
+            {/* Top bar */}
+            <div className="flex items-center justify-between bg-gradient-to-r from-cyan-500/10 to-orange-500/10 px-4 py-2.5 border-b border-gray-100 dark:border-white/10">
+              <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">👋 Also check out</span>
+              <button
+                onClick={() => setShowAmategekoPopup(false)}
+                className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 text-gray-400 hover:bg-gray-200 dark:hover:bg-white/20 transition-all"
+              >
+                <X size={11} />
+              </button>
+            </div>
+            {/* Portfolio link */}
+            <a
+              href="https://ephron-protifolio.vercel.app/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-3 px-4 py-3 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 transition-colors group border-b border-gray-100 dark:border-white/5"
+            >
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-400 text-black font-black text-[10px] shadow-sm shadow-cyan-500/20">
+                EP
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-black text-gray-900 dark:text-white">Ephron's Portfolio</p>
+                <p className="text-[10px] text-gray-400 truncate">Full Stack Developer</p>
+              </div>
+              <ExternalLink size={12} className="shrink-0 text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </a>
+            {/* Amategeko link */}
+            <a
+              href="https://amategekohub.vercel.app"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-3 px-4 py-3 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors group"
+            >
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange-400 to-red-500 text-white shadow-sm shadow-orange-500/20">
+                <BookMarked size={14} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-black text-gray-900 dark:text-white">Amategeko Hub</p>
+                <p className="text-[10px] text-gray-400 truncate">Rwanda Road Laws & Tests</p>
+              </div>
+              <ExternalLink size={12} className="shrink-0 text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Developer Card */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+        {showDevCard && (
+          <div className="mb-3 w-72 animate-popup-in overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-950 shadow-2xl shadow-black/30">
+            <div className="h-1 w-full bg-gradient-to-r from-cyan-400 to-cyan-500" />
+            <div className="p-5">
+              <div className="mb-3 flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 text-white font-black text-sm shadow-md shadow-cyan-500/30">
+                  EP
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-cyan-500">Developer</p>
+                  <p className="font-black text-gray-900 dark:text-white text-sm">Ephron's Portfolio</p>
+                </div>
+                <button onClick={() => setShowDevCard(false)} className="ml-auto flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 text-gray-400 hover:bg-gray-200 dark:hover:bg-white/20 transition-all">
+                  <X size={12} />
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-4">Want to know more about the developer behind this platform? View full portfolio, projects, and contact info.</p>
+              <a href="https://ephron-protifolio.vercel.app/" target="_blank" rel="noreferrer"
+                className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 px-4 py-2.5 text-xs font-black text-black shadow-md shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:-translate-y-0.5 transition-all">
+                <ExternalLink size={13} /> View Portfolio
+              </a>
+            </div>
+          </div>
+        )}
+        <button onClick={() => setShowDevCard((v) => !v)} title="About the Developer"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-cyan-400 text-black shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:scale-110 transition-all">
+          <Code2 size={20} />
+        </button>
+      </div>
       {/* HERO SECTION */}
       <section className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-gray-50 pt-24 text-gray-900 dark:bg-black dark:text-white">
         {/* Hero Images Background */}
@@ -541,6 +668,191 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* AD CAROUSEL SECTION */}
+      <section className="pb-20 pt-4">
+        <div className="page-container">
+
+          {/* Section label */}
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-cyan-500/30" />
+            <div className="flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/5 px-4 py-1.5">
+              <Sparkles size={13} className="text-cyan-400" />
+              <span className="text-xs font-black uppercase tracking-widest text-cyan-500">Also From Us</span>
+            </div>
+            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-cyan-500/30" />
+          </div>
+
+          {/* Ticker strip — always visible, scrolling */}
+          <div className="mb-6 overflow-hidden rounded-xl border border-cyan-500/20 bg-cyan-500/5">
+            <div className="ad-ticker flex items-center gap-0 whitespace-nowrap">
+              {[...Array(3)].map((_, ri) => (
+                <span key={ri} className="inline-flex items-center gap-6 px-6 py-2.5 text-xs font-bold text-cyan-600 dark:text-cyan-400">
+                  <span className="flex items-center gap-2"><Code2 size={12} />Ephron's Portfolio — Full Stack Developer</span>
+                  <span className="text-cyan-500/40">◆</span>
+                  <span className="flex items-center gap-2"><BookMarked size={12} />Amategeko y'umuhanda — Learn Rwanda Road Laws Free</span>
+                  <span className="text-cyan-500/40">◆</span>
+                  <span className="flex items-center gap-2"><ExternalLink size={12} />ephron-protifolio.vercel.app</span>
+                  <span className="text-cyan-500/40">◆</span>
+                  <span className="flex items-center gap-2"><ExternalLink size={12} />amategekohub.vercel.app</span>
+                  <span className="text-cyan-500/40">◆</span>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Main ad card carousel */}
+          <div className="relative overflow-hidden rounded-3xl border border-cyan-500/20 bg-white dark:bg-gray-950 shadow-xl shadow-cyan-500/5">
+
+            {/* Slides */}
+            <div
+              className="flex transition-transform duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]"
+              style={{ transform: `translateX(-${adSlide * 100}%)` }}
+            >
+              {ads.map((ad) => (
+                <div key={ad.id} className="w-full shrink-0">
+                  <div className={`relative overflow-hidden ${
+                    ad.accent === 'cyan'
+                      ? 'bg-gradient-to-br from-cyan-50 via-white to-gray-50 dark:from-cyan-950/40 dark:via-gray-950 dark:to-gray-950'
+                      : 'bg-gradient-to-br from-orange-50 via-white to-gray-50 dark:from-orange-950/30 dark:via-gray-950 dark:to-gray-950'
+                  }`}>
+
+                    {/* Decorative blobs */}
+                    <div className={`pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full blur-3xl ${
+                      ad.accent === 'cyan' ? 'bg-cyan-400/10' : 'bg-orange-400/10'
+                    }`} />
+                    <div className={`pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full blur-3xl ${
+                      ad.accent === 'cyan' ? 'bg-cyan-500/8' : 'bg-orange-500/8'
+                    }`} />
+
+                    {/* Top accent bar */}
+                    <div className={`h-1 w-full ${
+                      ad.accent === 'cyan'
+                        ? 'bg-gradient-to-r from-cyan-400 via-cyan-500 to-cyan-400'
+                        : 'bg-gradient-to-r from-orange-400 via-red-500 to-orange-400'
+                    }`} />
+
+                    <div className="flex flex-col gap-8 p-8 md:flex-row md:items-center md:p-12">
+
+                      {/* Icon */}
+                      <div className={`flex h-24 w-24 shrink-0 items-center justify-center self-center rounded-3xl text-white shadow-2xl ${
+                        ad.accent === 'cyan'
+                          ? 'bg-gradient-to-br from-cyan-400 to-cyan-600 shadow-cyan-500/30'
+                          : 'bg-gradient-to-br from-orange-400 to-red-500 shadow-orange-500/30'
+                      } ad-icon-pulse`}>
+                        {ad.label
+                          ? <span className="text-3xl font-black">{ad.label}</span>
+                          : ad.icon
+                        }
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className={`mb-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest ${
+                          ad.accent === 'cyan'
+                            ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
+                            : 'border-orange-500/30 bg-orange-500/10 text-orange-600 dark:text-orange-400'
+                        }`}>
+                          <Sparkles size={10} /> {ad.badge}
+                        </div>
+                        <h3 className="mb-3 text-2xl font-black text-gray-900 dark:text-white md:text-3xl">{ad.title}</h3>
+                        <p className="mb-5 max-w-lg text-sm leading-relaxed text-gray-600 dark:text-gray-400 md:text-base">{ad.desc}</p>
+                        <div className="mb-6 flex flex-wrap gap-2">
+                          {ad.tags.map((tag) => (
+                            <span key={tag} className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                              ad.accent === 'cyan'
+                                ? 'border-cyan-200 dark:border-cyan-500/30 bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-300'
+                                : 'border-orange-200 dark:border-orange-500/30 bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-300'
+                            }`}>{tag}</span>
+                          ))}
+                        </div>
+                        <a
+                          href={ad.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={`inline-flex items-center gap-2 rounded-2xl px-7 py-3.5 text-sm font-black shadow-lg transition-all hover:-translate-y-0.5 ${
+                            ad.accent === 'cyan'
+                              ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-black shadow-cyan-500/25 hover:shadow-cyan-500/40'
+                              : 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-orange-500/25 hover:shadow-orange-500/40'
+                          }`}
+                        >
+                          <ExternalLink size={16} /> {ad.cta}
+                        </a>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Prev / Next controls */}
+            <button
+              onClick={prevAd}
+              className="absolute left-4 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full border border-cyan-500/30 bg-white/80 dark:bg-gray-900/80 text-cyan-500 backdrop-blur-sm hover:bg-cyan-500 hover:text-black hover:border-cyan-500 transition-all shadow-md"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              onClick={nextAd}
+              className="absolute right-4 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full border border-cyan-500/30 bg-white/80 dark:bg-gray-900/80 text-cyan-500 backdrop-blur-sm hover:bg-cyan-500 hover:text-black hover:border-cyan-500 transition-all shadow-md"
+            >
+              <ChevronRight size={18} />
+            </button>
+
+            {/* Dot indicators */}
+            <div className="flex items-center justify-center gap-2 pb-5 pt-2">
+              {ads.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setAdSlide(i)}
+                  className={`rounded-full transition-all duration-300 ${
+                    i === adSlide
+                      ? 'w-6 h-2 bg-cyan-500'
+                      : 'w-2 h-2 bg-gray-300 dark:bg-gray-700 hover:bg-cyan-400'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Two compact quick-link cards below carousel */}
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <a
+              href="https://ephron-protifolio.vercel.app/"
+              target="_blank"
+              rel="noreferrer"
+              className="group flex items-center gap-4 rounded-2xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/5 to-transparent p-4 hover:border-cyan-500/40 hover:bg-cyan-500/10 hover:-translate-y-0.5 transition-all"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-400 text-black font-black text-xs shadow-md shadow-cyan-500/20">
+                EP
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-black uppercase tracking-widest text-cyan-500">Portfolio</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white truncate">ephron-protifolio.vercel.app</p>
+              </div>
+              <ExternalLink size={15} className="shrink-0 text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </a>
+            <a
+              href="https://amategekohub.vercel.app"
+              target="_blank"
+              rel="noreferrer"
+              className="group flex items-center gap-4 rounded-2xl border border-orange-500/20 bg-gradient-to-r from-orange-500/5 to-transparent p-4 hover:border-orange-500/40 hover:bg-orange-500/10 hover:-translate-y-0.5 transition-all"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-red-500 text-white shadow-md shadow-orange-500/20">
+                <BookMarked size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-black uppercase tracking-widest text-orange-500">Road Safety</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white truncate">amategekohub.vercel.app</p>
+              </div>
+              <ExternalLink size={15} className="shrink-0 text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </a>
+          </div>
+
+        </div>
+      </section>
+
     </div>
   );
 }
