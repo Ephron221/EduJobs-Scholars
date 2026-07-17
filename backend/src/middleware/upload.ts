@@ -37,16 +37,18 @@ const safeFilename = (file: Express.Multer.File): string => {
 const mixedCloudinaryStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (_req: any, file: Express.Multer.File) => {
-    const isPdf = file.mimetype === 'application/pdf' || path.extname(file.originalname).toLowerCase() === '.pdf';
-    const filename = safeFilename(file);
-    return {
-      folder: isPdf ? 'edujobs-scholars/documents' : 'edujobs-scholars/images',
-      resource_type: isPdf ? 'raw' : 'auto',
-      // For raw (PDF) resources Cloudinary does NOT auto-append the extension,
-      // so we must include it in the public_id. For images, strip it so
-      // Cloudinary can optimise the format freely.
-      public_id: isPdf ? filename : filename.replace(/\.[^.]+$/, ''),
-    };
+    try {
+      const isPdf = file.mimetype === 'application/pdf' || path.extname(file.originalname).toLowerCase() === '.pdf';
+      const filename = safeFilename(file);
+      return {
+        folder: isPdf ? 'edujobs-scholars/documents' : 'edujobs-scholars/images',
+        resource_type: isPdf ? 'raw' : 'auto',
+        public_id: isPdf ? filename : filename.replace(/\.[^.]+$/, ''),
+      };
+    } catch (err) {
+      console.error('Cloudinary storage params error:', err);
+      throw err;
+    }
   },
 });
 

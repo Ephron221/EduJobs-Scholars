@@ -1,5 +1,12 @@
 import { Request, Response } from 'express';
-import fetch from 'node-fetch';
+
+// `node-fetch` v3 is ESM-only. Use a dynamic import wrapper so this CommonJS-built
+// backend can call it on platforms like Vercel without ERR_REQUIRE_ESM.
+const dynamicFetch = async (...args: any[]) => {
+  const mod = await import('node-fetch');
+  const fn = (mod as any).default ?? mod;
+  return fn(...args);
+};
 
 // Simple AI chat controller: uses OpenAI when API key provided, otherwise returns canned responses.
 export const chat = async (req: Request, res: Response): Promise<void> => {
@@ -11,7 +18,7 @@ export const chat = async (req: Request, res: Response): Promise<void> => {
 
     if (OPENAI_KEY) {
       // Forward to OpenAI Chat Completions
-      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      const resp = await dynamicFetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

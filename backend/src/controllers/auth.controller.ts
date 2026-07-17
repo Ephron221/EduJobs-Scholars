@@ -149,11 +149,17 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     if (req.file) {
       const avatarUrl = getFileUrl(req.file, false);
       if (!avatarUrl) {
+        console.error('updateProfile: failed to get file URL', { file: req.file });
         res.status(400).json({ message: 'Profile image upload failed. Please try another image.' });
         return;
       }
       updateFields.avatar = avatarUrl;
     }
+
+    // Debug logging to diagnose runtime errors during profile update
+    console.log('updateProfile: user', { id: req.user?._id, email: req.user?.email });
+    console.log('updateProfile: file', req.file);
+    console.log('updateProfile: updateFields', updateFields);
 
     const user = await User.findByIdAndUpdate(
       req.user?._id,
@@ -168,7 +174,8 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
 
     res.json({ message: 'Profile updated successfully', user });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update profile', error });
+    console.error('updateProfile error:', error);
+    res.status(500).json({ message: 'Failed to update profile', error: error instanceof Error ? error.message : String(error) });
   }
 };
 

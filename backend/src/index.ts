@@ -32,16 +32,24 @@ const PORT = process.env.PORT || 5002;
 // Connect to MongoDB
 connectDB();
 
+// Simple request logger for debugging API routing issues
+app.use((req, _res, next) => {
+  try {
+    console.log('HTTP', req.method, req.originalUrl, 'Auth:', !!req.headers.authorization);
+  } catch (e) {
+    // ignore
+  }
+  next();
+});
+
 // Middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'https://edujobscholars.vercel.app',
+  ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL.replace(/\/$/, '')] : []),
 ];
-if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_URL)) {
-  allowedOrigins.push(process.env.FRONTEND_URL);
-}
 
 const corsOptions = {
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
@@ -55,7 +63,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
