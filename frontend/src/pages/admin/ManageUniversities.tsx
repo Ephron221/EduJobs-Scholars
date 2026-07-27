@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, Trash2, GraduationCap, Search, Globe, Star, Paperclip } from 'lucide-react';
+import { Plus, Pencil, Trash2, GraduationCap, Search, Globe, Star, Paperclip, Tag } from 'lucide-react';
 import { universityAPI } from '../../api';
 import AdminLayout from './AdminLayout';
 import Modal from '../../components/Modal';
@@ -11,12 +11,17 @@ import clsx from 'clsx';
 interface DocEntry { name: string; url: string; uploadedAt: string }
 interface University {
   _id: string; name: string; country: string; website: string;
-  description: string; logoUrl: string; featured: boolean;
+  description: string; logoUrl: string; phone: string; deadline: string;
+  intake: string; academicYear: string; category: string;
+  featured: boolean;
   images: string[]; documents: DocEntry[];
 }
 
+const CATEGORIES = ['Scholarship', 'Partial Scholarship', 'Study Loan', 'Self-sponsored'];
+
 const EMPTY: Omit<University, '_id'> = {
   name: '', country: '', website: '', description: '', logoUrl: '',
+  phone: '', deadline: '', intake: '', academicYear: '', category: 'Scholarship',
   featured: false, images: [], documents: [],
 };
 
@@ -32,6 +37,7 @@ export default function ManageUniversities() {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('details');
+  const [customCategory, setCustomCategory] = useState('');
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -45,26 +51,35 @@ export default function ManageUniversities() {
   useEffect(() => { fetch(); }, [fetch]);
 
   const openCreate = () => {
-    setForm(EMPTY); setEditItem(null); setActiveTab('details'); setModalOpen(true);
+    setForm(EMPTY); setEditItem(null); setActiveTab('details'); setModalOpen(true); setCustomCategory('');
   };
   const openEdit = (u: University) => {
     setForm({
       name: u.name, country: u.country, website: u.website, description: u.description,
-      logoUrl: u.logoUrl, featured: u.featured,
+      logoUrl: u.logoUrl, phone: u.phone || '', deadline: u.deadline || '',
+      intake: u.intake || '', academicYear: u.academicYear || '',
+      category: u.category || 'Scholarship',
+      featured: u.featured,
       images: u.images || [], documents: u.documents || [],
     });
     setEditItem(u); setActiveTab('details'); setModalOpen(true);
+    if (!CATEGORIES.includes(u.category)) {
+      setCustomCategory(u.category);
+    } else {
+      setCustomCategory('');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    const finalForm = { ...form, category: customCategory || form.category };
     try {
       if (editItem) {
-        await universityAPI.update(editItem._id, form);
+        await universityAPI.update(editItem._id, finalForm);
         toast.success('University updated!');
       } else {
-        await universityAPI.create(form);
+        await universityAPI.create(finalForm);
         toast.success('University created!');
       }
       setModalOpen(false);
@@ -82,7 +97,6 @@ export default function ManageUniversities() {
     } catch { toast.error('Failed to delete'); }
   };
 
-  // Refresh the edit item after file upload/delete to reflect new file list
   const refreshEditItem = async () => {
     if (!editItem) return;
     try {
@@ -116,8 +130,8 @@ export default function ManageUniversities() {
               <thead className="border-b border-gray-200 dark:border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900/2">
                 <tr>
                   <th className="table-header">University</th>
+                  <th className="table-header">Category</th>
                   <th className="table-header">Country</th>
-                  <th className="table-header">Website</th>
                   <th className="table-header">Files</th>
                   <th className="table-header">Featured</th>
                   <th className="table-header text-right">Actions</th>
@@ -136,12 +150,12 @@ export default function ManageUniversities() {
                         <span className="font-medium text-gray-900 dark:text-white">{u.name}</span>
                       </div>
                     </td>
-                    <td className="table-cell text-gray-600 dark:text-gray-400">{u.country}</td>
                     <td className="table-cell">
-                      <a href={u.website} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 text-xs">
-                        <Globe size={12} /> Visit
-                      </a>
+                      <span className="px-2 py-1 rounded-full bg-cyan-500/10 text-cyan-400 text-[10px] font-bold uppercase border border-cyan-500/20">
+                        {u.category}
+                      </span>
                     </td>
+                    <td className="table-cell text-gray-600 dark:text-gray-400">{u.country}</td>
                     <td className="table-cell">
                       {fileCount(u) > 0 ? (
                         <span className="inline-flex items-center gap-1 text-xs text-cyan-400">
@@ -176,7 +190,6 @@ export default function ManageUniversities() {
 
       {/* Create / Edit Modal */}
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editItem ? 'Edit University' : 'Add University'} size="lg">
-        {/* Tab Bar */}
         <div className="flex gap-1 mb-5 p-1 bg-gray-100 dark:bg-gray-800/60 rounded-xl">
           {(['details', 'files'] as Tab[]).map((tab) => (
             <button
@@ -217,6 +230,62 @@ export default function ManageUniversities() {
                 <input type="text" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="input-field" placeholder="e.g. Rwanda" required />
               </div>
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Category *</label>
+                <select 
+                  value={CATEGORIES.includes(form.category) ? form.category : 'Custom'} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'Custom') {
+                      setForm({ ...form, category: customCategory || '' });
+                    } else {
+                      setForm({ ...form, category: val });
+                      setCustomCategory('');
+                    }
+                  }} 
+                  className="input-field"
+                >
+                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="Custom">Custom...</option>
+                </select>
+              </div>
+              {(form.category === 'Custom' || !CATEGORIES.includes(form.category)) && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Custom Category Name</label>
+                  <input 
+                    type="text" 
+                    value={customCategory} 
+                    onChange={(e) => setCustomCategory(e.target.value)} 
+                    className="input-field" 
+                    placeholder="e.g. Full Scholarship"
+                    required
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Phone Number</label>
+                <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="input-field" placeholder="e.g. +250..." />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Deadline *</label>
+                <input type="datetime-local" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} className="input-field" required />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Intake</label>
+                <input type="text" value={form.intake} onChange={(e) => setForm({ ...form, intake: e.target.value })} className="input-field" placeholder="e.g. September" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Academic Year</label>
+                <input type="text" value={form.academicYear} onChange={(e) => setForm({ ...form, academicYear: e.target.value })} className="input-field" placeholder="e.g. 2026-2027" />
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Official Website *</label>
               <input type="url" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} className="input-field" placeholder="https://..." required />
@@ -240,11 +309,6 @@ export default function ManageUniversities() {
                 {editItem ? 'Save Changes' : 'Add University'}
               </button>
             </div>
-            {!editItem && (
-              <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-                You can upload images &amp; PDFs after creating the university.
-              </p>
-            )}
           </form>
         ) : (
           editItem && (

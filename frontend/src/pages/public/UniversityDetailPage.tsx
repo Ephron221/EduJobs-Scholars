@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Globe, MapPin, Calendar, Clock, ExternalLink, GraduationCap, BookOpen } from 'lucide-react';
+import { ArrowLeft, Globe, MapPin, Calendar, Clock, ExternalLink, GraduationCap, BookOpen, Phone, AlertCircle, Tag } from 'lucide-react';
 import { universityAPI, programAPI } from '../../api';
 import { format } from 'date-fns';
 import Loader from '../../components/Loader';
@@ -13,6 +13,11 @@ interface University {
   website: string;
   description: string;
   logoUrl?: string;
+  phone?: string;
+  deadline?: string;
+  intake?: string;
+  academicYear?: string;
+  category: string;
   featured: boolean;
 }
 
@@ -27,6 +32,60 @@ interface Program {
   applicationLink: string;
   tuitionFee: string;
 }
+
+const Countdown = ({ deadline }: { deadline: string }) => {
+  const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
+
+  useEffect(() => {
+    const target = new Date(deadline).getTime();
+    if (isNaN(target)) return;
+
+    const interval = setInterval(() => {
+      const now = new Date().getTime();
+      const diff = target - now;
+
+      if (diff <= 0) {
+        setTimeLeft(null);
+        clearInterval(interval);
+      } else {
+        setTimeLeft({
+          d: Math.floor(diff / (1000 * 60 * 60 * 24)),
+          h: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          m: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+          s: Math.floor((diff % (1000 * 60)) / 1000),
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [deadline]);
+
+  if (!timeLeft) return <span className="text-red-500 font-bold uppercase flex items-center gap-1"><AlertCircle size={14}/> Deadline Reached</span>;
+
+  return (
+    <div className="flex gap-3">
+      <div className="flex flex-col items-center">
+        <span className="text-xl font-black text-cyan-500">{timeLeft.d}</span>
+        <span className="text-[10px] uppercase text-gray-500">Days</span>
+      </div>
+      <div className="text-xl font-black text-gray-700 dark:text-gray-300">:</div>
+      <div className="flex flex-col items-center">
+        <span className="text-xl font-black text-cyan-500">{timeLeft.h}</span>
+        <span className="text-[10px] uppercase text-gray-500">Hrs</span>
+      </div>
+      <div className="text-xl font-black text-gray-700 dark:text-gray-300">:</div>
+      <div className="flex flex-col items-center">
+        <span className="text-xl font-black text-cyan-500">{timeLeft.m}</span>
+        <span className="text-[10px] uppercase text-gray-500">Min</span>
+      </div>
+      <div className="text-xl font-black text-gray-700 dark:text-gray-300">:</div>
+      <div className="flex flex-col items-center">
+        <span className="text-xl font-black text-cyan-500">{timeLeft.s}</span>
+        <span className="text-[10px] uppercase text-gray-500">Sec</span>
+      </div>
+    </div>
+  );
+};
 
 export default function UniversityDetailPage() {
   const { id } = useParams();
@@ -49,6 +108,11 @@ export default function UniversityDetailPage() {
     };
     fetch();
   }, [id]);
+
+  const isExpired = useMemo(() => {
+    if (!university?.deadline) return false;
+    return new Date(university.deadline).getTime() < new Date().getTime();
+  }, [university?.deadline]);
 
   if (loading) return <div className="pt-24"><Loader /></div>;
   if (!university) return (
@@ -77,18 +141,75 @@ export default function UniversityDetailPage() {
             </div>
             <div className="flex-1">
               <div className="flex flex-wrap items-start gap-3 mb-2">
-                <h1 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white">{university.name}</h1>
+                <h1 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white uppercase">{university.name}</h1>
                 {university.featured && (
                   <span className="bg-gradient-to-r from-cyan-500 to-cyan-400 text-black text-xs font-bold px-2.5 py-1 rounded-full">⭐ Featured</span>
                 )}
+                <span className="bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 px-3 py-1 rounded-full text-xs font-bold uppercase flex items-center gap-1.5">
+                  <Tag size={12} /> {university.category}
+                </span>
+                {university.deadline && (
+                  <span className={clsx(
+                    "px-3 py-1 rounded-full text-xs font-bold uppercase flex items-center gap-1.5",
+                    isExpired ? "bg-red-500/20 text-red-500 border border-red-500/30" : "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                  )}>
+                    <Clock size={12} />
+                    {isExpired ? "Closed" : "Open"}
+                  </span>
+                )}
               </div>
-              <div className="flex flex-wrap items-center gap-4 text-gray-600 dark:text-gray-400 text-sm mb-4">
+              <div className="flex flex-wrap items-center gap-4 text-gray-600 dark:text-gray-400 text-sm mb-6">
                 <span className="flex items-center gap-1.5"><MapPin size={14} className="text-cyan-500" />{university.country}</span>
-                <a href={university.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-cyan-400 transition-colors">
-                  <Globe size={14} className="text-cyan-500" /> Official Website <ExternalLink size={12} />
+                {university.phone && (
+                  <span className="flex items-center gap-1.5"><Phone size={14} className="text-cyan-500" />{university.phone}</span>
+                )}
+                <a href={university.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-cyan-400 transition-colors font-semibold">
+                  <Globe size={14} className="text-cyan-500" /> Visit Official Website <ExternalLink size={12} />
                 </a>
               </div>
-              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{university.description}</p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div className="p-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10">
+                  <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-bold mb-3 flex items-center gap-2">
+                    <Tag size={14} className="text-cyan-500"/> Opportunity Category
+                  </p>
+                  <p className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">{university.category}</p>
+                  <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-widest">{university.intake} {university.academicYear && `[${university.academicYear}]`} Intake</p>
+                </div>
+
+                {university.deadline && (
+                  <div className="p-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10">
+                    <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-bold mb-3 flex items-center gap-2">
+                      <Clock size={14} className="text-cyan-500"/> Time Remaining
+                    </p>
+                    <Countdown deadline={university.deadline} />
+                    {!isExpired && (
+                      <p className="text-[10px] text-gray-400 mt-2 italic">
+                        Closing: {format(new Date(university.deadline), 'PPPpp')}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {isExpired && (
+                <div className="mb-6 p-6 rounded-2xl bg-red-500/5 border border-red-500/20 text-center sm:text-left flex flex-col sm:flex-row items-center gap-4">
+                  <div className="h-12 w-12 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+                    <AlertCircle className="text-red-500" size={24} />
+                  </div>
+                  <div>
+                    <h4 className="text-red-500 font-bold mb-1">Application Period Closed</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                      This opportunity has expired. Please check other available universities to find your next scholarship.
+                    </p>
+                    <Link to="/universities" className="text-sm font-bold text-cyan-500 hover:text-cyan-400 flex items-center gap-1 justify-center sm:justify-start">
+                      Explore Active Opportunities <ArrowLeft size={14} className="rotate-180" />
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">{university.description}</p>
             </div>
           </div>
         </div>
@@ -123,8 +244,9 @@ export default function UniversityDetailPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filtered.map((prog) => {
-                const isDeadlinePast = new Date(prog.deadline) < new Date();
-                const daysLeft = Math.ceil((new Date(prog.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                const progDeadline = new Date(prog.deadline);
+                const isDeadlinePast = progDeadline < new Date();
+                const daysLeft = Math.ceil((progDeadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                 return (
                   <div key={prog._id} className="glass-card-hover p-5">
                     <div className="flex items-start justify-between gap-3 mb-3">
@@ -140,14 +262,14 @@ export default function UniversityDetailPage() {
                       <span className="flex items-center gap-1"><Clock size={11} className="text-cyan-500" /> {prog.duration}</span>
                       <span className={clsx('flex items-center gap-1', isDeadlinePast ? 'text-red-400' : daysLeft <= 30 ? 'text-yellow-400' : '')}>
                         <Calendar size={11} className="text-cyan-500" />
-                        {isDeadlinePast ? 'Expired' : `${daysLeft} days left`} · {format(new Date(prog.deadline), 'MMM dd, yyyy')}
+                        {isDeadlinePast ? 'Expired' : `${daysLeft} days left`} · {format(progDeadline, 'MMM dd, yyyy')}
                       </span>
                     </div>
                     <p className="text-gray-600 dark:text-gray-400 text-xs mb-4 line-clamp-2">{prog.requirements}</p>
                     <a href={prog.applicationLink} target="_blank" rel="noopener noreferrer"
                       className={clsx('w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all',
-                        isDeadlinePast ? 'bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed' : 'btn-primary')}>
-                      Apply Now <ExternalLink size={13} />
+                        isDeadlinePast || isExpired ? 'bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed' : 'btn-primary')}>
+                      {isDeadlinePast || isExpired ? 'Closed' : 'Apply Now'} <ExternalLink size={13} />
                     </a>
                   </div>
                 );

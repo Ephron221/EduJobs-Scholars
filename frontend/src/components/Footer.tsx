@@ -65,11 +65,11 @@ export default function Footer() {
             <ul className="space-y-3">
               <li className="flex items-start gap-2 text-gray-600 dark:text-gray-400 text-sm">
                 <MapPin size={15} className="text-cyan-400 mt-0.5 shrink-0" />
-                Kigali, Rwanda
+                South, Nyanza
               </li>
               <li className="flex items-start gap-2 text-gray-600 dark:text-gray-400 text-sm">
                 <Mail size={15} className="text-cyan-400 mt-0.5 shrink-0" />
-                info@edujobsscholars.rw
+                esront21@gmail.com
               </li>
               <li className="flex items-start gap-2 text-gray-600 dark:text-gray-400 text-sm">
                 <GraduationCap size={15} className="text-cyan-400 mt-0.5 shrink-0" />

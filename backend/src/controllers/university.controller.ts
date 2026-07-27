@@ -8,15 +8,19 @@ import { getFileUrl } from '../utils/fileHelper';
 
 export const getUniversities = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { search, country, featured, fundingType, page = 1, limit = 12 } = req.query;
+    const { search, country, featured, fundingType, category, page = 1, limit = 12 } = req.query;
     const query: Record<string, unknown> = {};
+    
     if (search) query.$text = { $search: search as string };
     if (country) query.country = { $regex: country as string, $options: 'i' };
     if (featured === 'true') query.featured = true;
+    if (category) query.category = category as string;
+
     if (typeof fundingType === 'string' && fundingType) {
       const universityIds = await Program.distinct('universityId', { fundingType });
       query._id = { $in: universityIds };
     }
+    
     const skip = (Number(page) - 1) * Number(limit);
     const [universities, total] = await Promise.all([
       University.find(query).sort({ featured: -1, createdAt: -1 }).skip(skip).limit(Number(limit)),
