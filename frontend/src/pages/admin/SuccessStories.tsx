@@ -122,7 +122,7 @@ export default function SuccessStories() {
         howTheyKnow: story.howTheyKnow,
         howHelped: story.howHelped,
       });
-      setPreviewUrl(getAssetUrl(story.profileImage));
+      setPreviewUrl(getAssetUrl(story.profileImage) || null);
     } else {
       setFormData(INITIAL_FORM);
       setPreviewUrl(null);
