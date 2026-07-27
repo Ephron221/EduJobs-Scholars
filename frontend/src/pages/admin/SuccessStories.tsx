@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, Trash2, User, Briefcase, Image as ImageIcon, MessageSquare, Heart, Search, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, User, Briefcase, Image as ImageIcon, MessageSquare, Heart, Search, X, GraduationCap } from 'lucide-react';
 import { successStoryAPI } from '../../api';
 import Loader from '../../components/Loader';
 import Modal from '../../components/Modal';
@@ -11,7 +11,7 @@ import clsx from 'clsx';
 interface SuccessStory {
   _id: string;
   fullName: string;
-  type: 'student' | 'worker';
+  type: string;
   profileImage: string;
   howTheyKnow: string;
   howHelped: string;
@@ -20,7 +20,7 @@ interface SuccessStory {
 
 const INITIAL_FORM = {
   fullName: '',
-  type: 'student' as 'student' | 'worker',
+  type: 'Student',
   profileImage: null as File | null,
   howTheyKnow: '',
   howHelped: '',
@@ -35,6 +35,7 @@ export default function SuccessStories() {
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [saving, setSaving] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [customType, setCustomType] = useState('');
 
   const fetchStories = useCallback(async () => {
     setLoading(true);
@@ -69,7 +70,7 @@ export default function SuccessStories() {
     try {
       const submitData = new FormData();
       submitData.append('fullName', formData.fullName);
-      submitData.append('type', formData.type);
+      submitData.append('type', customType || formData.type);
       submitData.append('howTheyKnow', formData.howTheyKnow);
       submitData.append('howHelped', formData.howHelped);
       if (formData.profileImage) {
@@ -110,29 +111,34 @@ export default function SuccessStories() {
     setEditingStory(null);
     setFormData(INITIAL_FORM);
     setPreviewUrl(null);
+    setCustomType('');
   };
 
   const openModal = (story?: SuccessStory) => {
     if (story) {
       setEditingStory(story);
+      const isStandard = ['Student', 'Worker'].includes(story.type);
       setFormData({
         fullName: story.fullName,
-        type: story.type,
+        type: isStandard ? story.type : 'Custom',
         profileImage: null,
         howTheyKnow: story.howTheyKnow,
         howHelped: story.howHelped,
       });
+      setCustomType(isStandard ? '' : story.type);
       setPreviewUrl(getAssetUrl(story.profileImage) || null);
     } else {
       setFormData(INITIAL_FORM);
       setPreviewUrl(null);
+      setCustomType('');
     }
     setShowModal(true);
   };
 
   const filteredStories = stories.filter(s => 
     s.fullName.toLowerCase().includes(search.toLowerCase()) ||
-    s.howHelped.toLowerCase().includes(search.toLowerCase())
+    s.howHelped.toLowerCase().includes(search.toLowerCase()) ||
+    s.type.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -167,15 +173,15 @@ export default function SuccessStories() {
                     />
                     <div className={clsx(
                       "absolute -bottom-1 -right-1 p-1.5 rounded-lg shadow-lg",
-                      story.type === 'student' ? "bg-blue-500" : "bg-purple-500"
+                      story.type.toLowerCase().includes('student') || story.type.toLowerCase().includes('graduate') ? "bg-blue-500" : "bg-purple-500"
                     )}>
-                      {story.type === 'student' ? <User size={12} className="text-white" /> : <Briefcase size={12} className="text-white" />}
+                      {story.type.toLowerCase().includes('student') || story.type.toLowerCase().includes('graduate') ? <User size={12} className="text-white" /> : <Briefcase size={12} className="text-white" />}
                     </div>
                   </div>
-                  <div>
-                    <h3 className="font-black text-gray-900 dark:text-white text-lg leading-tight">{story.fullName}</h3>
-                    <p className="text-xs font-bold text-cyan-500 uppercase tracking-widest mt-1">
-                      {story.type === 'student' ? 'Student' : 'Worker'}
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-black text-gray-900 dark:text-white text-lg leading-tight truncate">{story.fullName}</h3>
+                    <p className="text-xs font-bold text-cyan-500 uppercase tracking-widest mt-1 truncate">
+                      {story.type}
                     </p>
                   </div>
                 </div>
@@ -183,13 +189,13 @@ export default function SuccessStories() {
                 <div className="space-y-4">
                   <div className="flex gap-3">
                     <MessageSquare size={16} className="text-gray-400 shrink-0 mt-1" />
-                    <p className="text-sm text-gray-600 dark:text-gray-400 italic line-clamp-2">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 italic line-clamp-3">
                       "{story.howTheyKnow}"
                     </p>
                   </div>
                   <div className="flex gap-3">
                     <Heart size={16} className="text-cyan-500 shrink-0 mt-1" />
-                    <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-4 leading-relaxed">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-5 leading-relaxed">
                       {story.howHelped}
                     </p>
                   </div>
@@ -248,7 +254,7 @@ export default function SuccessStories() {
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   className="input-field"
-                  placeholder="e.g., Esron TUYISHIMIRE"
+                  placeholder="e.g., Ephron TUYISHIME"
                   required
                 />
               </div>
@@ -257,24 +263,34 @@ export default function SuccessStories() {
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
                   Story Type *
                 </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {(['student', 'worker'] as const).map((t) => (
+                <div className="grid grid-cols-3 gap-2">
+                  {(['Student', 'Worker', 'Custom'] as const).map((t) => (
                     <button
                       key={t}
                       type="button"
                       onClick={() => setFormData({ ...formData, type: t })}
                       className={clsx(
-                        "flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-bold text-sm transition-all",
+                        "flex items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 font-bold text-xs transition-all",
                         formData.type === t 
                           ? "bg-cyan-500 border-cyan-500 text-black" 
                           : "border-gray-200 dark:border-white/10 text-gray-500 hover:border-cyan-500/50"
                       )}
                     >
-                      {t === 'student' ? <User size={16} /> : <Briefcase size={16} />}
-                      {t.charAt(0).toUpperCase() + t.slice(1)}
+                      {t === 'Student' ? <User size={14} /> : t === 'Worker' ? <Briefcase size={14} /> : <GraduationCap size={14} />}
+                      {t}
                     </button>
                   ))}
                 </div>
+                {formData.type === 'Custom' && (
+                  <input
+                    type="text"
+                    value={customType}
+                    onChange={(e) => setCustomType(e.target.value)}
+                    className="input-field mt-3"
+                    placeholder="e.g., Computer Science Graduate"
+                    required
+                  />
+                )}
               </div>
 
               <div>
@@ -326,7 +342,7 @@ export default function SuccessStories() {
                   onChange={(e) => setFormData({ ...formData, howTheyKnow: e.target.value })}
                   rows={4}
                   className="input-field resize-none h-32"
-                  placeholder="e.g., Through a friend, social media, or school presentation..."
+                  placeholder="e.g., I actively searched for ICT career opportunities..."
                   required
                 />
               </div>
@@ -340,7 +356,7 @@ export default function SuccessStories() {
                   onChange={(e) => setFormData({ ...formData, howHelped: e.target.value })}
                   rows={6}
                   className="input-field resize-none h-[156px]"
-                  placeholder="Describe how EduJobs Scholars helped them achieve their goals..."
+                  placeholder="Describe their journey and how EduJobs Scholars helped..."
                   required
                 />
               </div>

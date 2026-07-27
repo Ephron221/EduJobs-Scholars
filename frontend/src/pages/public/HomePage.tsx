@@ -1,16 +1,28 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, GraduationCap, Briefcase, Users, Search, BookOpen, ChevronDown, Star, Zap, Calendar, MapPin, Clock, X, ExternalLink, Code2, BookMarked, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { ArrowRight, GraduationCap, Briefcase, Users, Search, BookOpen, ChevronDown, Star, Zap, Calendar, MapPin, Clock, X, ExternalLink, Code2, BookMarked, ChevronLeft, ChevronRight, Sparkles, MessageSquare, Heart, User, Quote } from 'lucide-react';
 import { universityAPI, jobAPI, programAPI, heroImageAPI, successStoryAPI } from '../../api';
 import UniversityCard from '../../components/UniversityCard';
 import JobCard from '../../components/JobCard';
 import Loader from '../../components/Loader';
+import Modal from '../../components/Modal';
 import { getAssetUrl } from '../../utils/assetUrl';
+import clsx from 'clsx';
 
 type HeroImage = {
   imageUrl: string;
   altText?: string;
 };
+
+interface SuccessStory {
+  _id: string;
+  fullName: string;
+  type: string;
+  profileImage: string;
+  howTheyKnow: string;
+  howHelped: string;
+  createdAt: string;
+}
 
 const TypewriterHeadline = () => {
   const lines = ['Your Future', 'Starts Here'];
@@ -95,17 +107,18 @@ const Counter = ({ end, suffix = '', repeat = false }: { end: number; suffix?: s
 };
 
 export default function HomePage() {
-  const [universities, setUniversities] = useState<never[]>([]);
-  const [jobs, setJobs] = useState<never[]>([]);
-  const [programs, setPrograms] = useState<never[]>([]);
+  const [universities, setUniversities] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [programs, setPrograms] = useState<any[]>([]);
   const [heroImages, setHeroImages] = useState<HeroImage[]>([]);
-  const [successStories, setSuccessStories] = useState<never[]>([]);
+  const [successStories, setSuccessStories] = useState<SuccessStory[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [searchType, setSearchType] = useState('all');
   const [currentHeroImage, setCurrentHeroImage] = useState(0);
   const [showAmategekoPopup, setShowAmategekoPopup] = useState(false);
   const [showDevCard, setShowDevCard] = useState(false);
+  const [selectedStory, setSelectedStory] = useState<SuccessStory | null>(null);
   const [adSlide, setAdSlide] = useState(0);
   const adTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -481,8 +494,7 @@ export default function HomePage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {universities.map((uni: never) => (
-                    // @ts-ignore
+                  {universities.map((uni: any) => (
                     <UniversityCard key={uni._id} university={uni} />
                   ))}
                 </div>
@@ -545,25 +557,51 @@ export default function HomePage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {successStories.slice(0, 6).map((story: any) => (
-                    <div key={story._id} className="glass-card-hover p-6 group">
-                      <div className="flex items-start gap-4 mb-4">
-                        <img
-                          src={getAssetUrl(story.profileImage)}
-                          alt={story.fullName}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-cyan-500/20"
-                        />
-                        <div className="flex-1">
-                          <h3 className="font-bold text-gray-900 dark:text-white text-base">{story.fullName}</h3>
-                          <p className="text-cyan-400 text-sm">{story.type === 'student' ? 'Student' : 'Worker'}</p>
+                  {successStories.slice(0, 6).map((story: SuccessStory) => (
+                    <div key={story._id} className="glass-card-hover p-6 group flex flex-col transition-all hover:shadow-2xl hover:shadow-cyan-500/10 border border-gray-100 dark:border-white/5">
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="relative">
+                          <img
+                            src={getAssetUrl(story.profileImage)}
+                            alt={story.fullName}
+                            className="w-16 h-16 rounded-2xl object-cover ring-2 ring-cyan-500/20"
+                          />
+                          <div className={clsx(
+                            "absolute -bottom-1 -right-1 p-1.5 rounded-lg shadow-lg",
+                            story.type.toLowerCase().includes('student') || story.type.toLowerCase().includes('graduate') ? "bg-blue-500" : "bg-purple-500"
+                          )}>
+                            {story.type.toLowerCase().includes('student') || story.type.toLowerCase().includes('graduate') ? <User size={12} className="text-white" /> : <Briefcase size={12} className="text-white" />}
+                          </div>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-black text-gray-900 dark:text-white text-lg leading-tight truncate">{story.fullName}</h3>
+                          <p className="text-xs font-bold text-cyan-500 uppercase tracking-widest mt-1 truncate">
+                            {story.type}
+                          </p>
                         </div>
                       </div>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 italic">
-                        "{story.howTheyKnow}"
-                      </p>
-                      <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
-                        {story.howHelped}
-                      </p>
+
+                      <div className="space-y-4 flex-1">
+                        <div className="flex gap-3 relative">
+                          <Quote size={20} className="text-cyan-500/20 absolute -left-2 -top-2" />
+                          <p className="text-sm text-gray-600 dark:text-gray-400 italic line-clamp-2 pl-4">
+                            {story.howTheyKnow}
+                          </p>
+                        </div>
+                        <div className="flex gap-3">
+                          <Heart size={16} className="text-cyan-500 shrink-0 mt-1" />
+                          <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-4 leading-relaxed">
+                            {story.howHelped}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setSelectedStory(story)}
+                        className="mt-6 flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-gray-900 dark:text-white font-bold text-xs hover:bg-cyan-500 hover:text-black hover:border-cyan-500 transition-all group/btn"
+                      >
+                        Read Full Journey <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -572,6 +610,96 @@ export default function HomePage() {
           )}
         </div>
       </section>
+
+      {/* Success Story Detail Modal */}
+      <Modal
+        isOpen={!!selectedStory}
+        onClose={() => setSelectedStory(null)}
+        title="Success Story"
+        size="lg"
+      >
+        {selectedStory && (
+          <div className="space-y-8 animate-fade-in">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
+              <img
+                src={getAssetUrl(selectedStory.profileImage)}
+                alt={selectedStory.fullName}
+                className="w-28 h-24 sm:w-32 sm:h-32 rounded-3xl object-cover ring-4 ring-cyan-500/20 shadow-2xl"
+              />
+              <div className="flex-1">
+                <div className="mb-4">
+                  <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-1">{selectedStory.fullName}</h2>
+                  <p className="text-cyan-500 font-bold uppercase tracking-widest text-xs flex items-center justify-center sm:justify-start gap-2">
+                    {selectedStory.type.toLowerCase().includes('student') || selectedStory.type.toLowerCase().includes('graduate') ? <User size={14} /> : <Briefcase size={14} />}
+                    {selectedStory.type}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 text-sm">
+                  <div className="flex items-center justify-center sm:justify-start gap-3 text-gray-600 dark:text-gray-400">
+                    <span className="font-bold text-gray-900 dark:text-white shrink-0">Discovery:</span>
+                    <span className="truncate">{selectedStory.howTheyKnow.slice(0, 40)}...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+              {/* Sidebar Info */}
+              <div className="md:col-span-2 space-y-6">
+                <div className="p-6 rounded-3xl bg-cyan-500/5 border border-cyan-500/10">
+                  <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <Users size={14} className="text-cyan-500" />
+                    Quick Profile
+                  </h3>
+                  <ul className="space-y-4">
+                    <li>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Full Name</p>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">{selectedStory.fullName}</p>
+                    </li>
+                    <li>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Type</p>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">{selectedStory.type}</p>
+                    </li>
+                    <li>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">How I Discovered Us</p>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 leading-relaxed italic">
+                        "{selectedStory.howTheyKnow}"
+                      </p>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Main Content */}
+              <div className="md:col-span-3 space-y-6">
+                <section>
+                  <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <Sparkles size={14} className="text-cyan-500" />
+                    My Journey
+                  </h3>
+                  <div className="relative">
+                    <Quote size={40} className="text-cyan-500/5 absolute -left-4 -top-4 -z-0" />
+                    <p className="relative z-10 text-gray-700 dark:text-gray-300 leading-8 text-base whitespace-pre-line">
+                      {selectedStory.howHelped}
+                    </p>
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-gray-100 dark:border-white/10 flex justify-center sm:justify-end">
+              <button
+                onClick={() => setSelectedStory(null)}
+                className="w-full sm:w-auto px-10 py-3.5 rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-black font-black text-sm hover:scale-105 transition-all shadow-xl shadow-black/10 dark:shadow-white/10"
+              >
+                Done Reading
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* AVAILABLE OPPORTUNITIES */}
       <section className="py-16">
