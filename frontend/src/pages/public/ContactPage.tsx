@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mail, MapPin, Phone, Send } from 'lucide-react';
+import { Mail, MapPin, Phone, Send, MessageCircle, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { contactAPI } from '../../api';
 
@@ -71,12 +71,24 @@ export default function ContactPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Info Sidebar */}
             <div className="space-y-6">
-              <div className="glass-card p-6">
-                <div className="w-12 h-12 bg-cyan-500/10 text-cyan-500 dark:text-cyan-400 rounded-xl flex items-center justify-center mb-4">
-                  <MapPin size={24} />
+              {/* WhatsApp Group Card */}
+              <div className="glass-card p-6 border-green-500/30 bg-green-500/5 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <MessageCircle size={80} className="text-green-500" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Our Location</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">Nyanza<br/>South, Rwanda</p>
+                <div className="w-12 h-12 bg-green-500 text-white rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-green-500/20">
+                  <Users size={24} />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Join EduJobs Scholars Community</h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">Join our WhatsApp group for instant updates and networking.</p>
+                <a 
+                  href="https://chat.whatsapp.com/BDEAa9Knxs7J3SCarkhvvE" 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="btn-primary w-full !bg-green-500 hover:!bg-green-600 !text-black flex items-center justify-center gap-2"
+                >
+                  <MessageCircle size={16} /> Join Group
+                </a>
               </div>
 
               <div className="glass-card p-6">
@@ -93,9 +105,9 @@ export default function ContactPage() {
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Call Us</h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">+250 787 846 344<br/>Mon–Fri, 8am–5pm CAT</p>
-                <div className="mt-3 flex gap-2">
-                  <a href="tel:+250787846344" className="btn-secondary">Call +250 78 784 6344</a>
-                  <a href="https://wa.me/250787846344" target="_blank" rel="noreferrer" className="btn-ghost">WhatsApp</a>
+                <div className="mt-3 flex flex-col gap-2">
+                  <a href="tel:+250787846344" className="btn-secondary text-center">Call Now</a>
+                  <a href="https://wa.me/250787846344" target="_blank" rel="noreferrer" className="btn-ghost text-center border-green-500/30 text-green-500">Chat on WhatsApp</a>
                 </div>
               </div>
             </div>

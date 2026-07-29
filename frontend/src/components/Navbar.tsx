@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Bell, User, LogOut, BookOpen, Briefcase, GraduationCap, LayoutDashboard, Shield } from 'lucide-react';
+import { Menu, X, Bell, User, LogOut, BookOpen, Briefcase, GraduationCap, LayoutDashboard, Shield, LifeBuoy } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getAssetUrl } from '../utils/assetUrl';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -9,7 +9,7 @@ import ThemeToggle from './ThemeToggle';
 import clsx from 'clsx';
 
 export default function Navbar() {
-  const { isAuthenticated, user, logout, isAdmin } = useAuth();
+  const { isAuthenticated, user, logout, isAdmin, isAssistant } = useAuth();
   const { unreadCount } = useNotifications();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -42,6 +42,8 @@ export default function Navbar() {
   ];
 
   const isActive = (href: string) => href === '/' ? location.pathname === '/' : location.pathname.startsWith(href);
+
+  const isStaff = isAdmin || isAssistant;
 
   return (
     <header className={clsx(
@@ -131,15 +133,17 @@ export default function Navbar() {
                       <div className="p-3 border-b border-gray-200 dark:border-white/10">
                         <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user?.name}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
-                        <span className={clsx('text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-medium',
-                          isAdmin ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300')}>
-                          {isAdmin ? '⚡ Admin' : user?.role === 'jobseeker' ? '💼 Jobseeker' : '🎓 Student'}
+                        <span className={clsx('text-[10px] px-2 py-0.5 rounded-full mt-1 inline-block font-bold uppercase tracking-wider',
+                          isAdmin ? 'bg-cyan-500/10 text-cyan-500' : 
+                          isAssistant ? 'bg-emerald-500/10 text-emerald-500' :
+                          'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300')}>
+                          {isAdmin ? '⚡ Admin' : isAssistant ? '🛠 Assistant' : user?.role === 'jobseeker' ? '💼 Jobseeker' : '🎓 Student'}
                         </span>
                       </div>
                       <div className="p-2">
-                        {isAdmin ? (
+                        {isStaff ? (
                           <Link to="/admin" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-all">
-                            <Shield size={15} /> Admin Dashboard
+                            <Shield size={15} /> Management Panel
                           </Link>
                         ) : (
                           <Link to="/dashboard" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-all">
@@ -183,6 +187,11 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+            {isAuthenticated && (
+              <Link to={isStaff ? "/admin" : "/dashboard"} className="block px-4 py-3 rounded-lg text-sm font-medium text-cyan-500">
+                {isStaff ? "Management Panel" : "My Dashboard"}
+              </Link>
+            )}
             {!isAuthenticated && (
               <div className="pt-2">
                 <Link to="/login" className="btn-primary w-full block text-center py-2.5 text-sm">Login</Link>

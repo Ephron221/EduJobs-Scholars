@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, GraduationCap, Briefcase, Users, Search, BookOpen, ChevronDown, Star, Zap, Calendar, MapPin, Clock, X, ExternalLink, Code2, BookMarked, ChevronLeft, ChevronRight, Sparkles, MessageSquare, Heart, User, Quote } from 'lucide-react';
+import { ArrowRight, GraduationCap, Briefcase, Users, Search, BookOpen, ChevronDown, Star, Zap, Calendar, MapPin, Clock, X, ExternalLink, Code2, BookMarked, ChevronLeft, ChevronRight, Sparkles, MessageSquare, Heart, User, Quote, MessageCircle } from 'lucide-react';
 import { universityAPI, jobAPI, programAPI, heroImageAPI, successStoryAPI } from '../../api';
 import UniversityCard from '../../components/UniversityCard';
 import JobCard from '../../components/JobCard';
@@ -53,7 +53,7 @@ const TypewriterHeadline = () => {
   const [firstLine = '', secondLine = ''] = visibleText.split('\n');
 
   return (
-    <h1 className="text-5xl font-black leading-none tracking-normal text-gray-900 sm:text-6xl lg:text-7xl dark:text-white animate-slide-up" aria-label="Your Future Starts Here">
+    <h1 className="text-5xl font-black leading-none tracking-normal text-white sm:text-6xl lg:text-7xl animate-slide-up drop-shadow-2xl" aria-label="Your Future Starts Here">
       <span className="hero-type-highlight">{firstLine || '\u00A0'}</span>
       <br />
       <span className="hero-type-highlight">{secondLine || '\u00A0'}</span>
@@ -197,6 +197,7 @@ export default function HomePage() {
       if (heroIntervalRef.current) clearInterval(heroIntervalRef.current);
     };
   }, [heroImages.length]);
+
   useEffect(() => {
     const canvas = particlesRef.current;
     if (!canvas) return;
@@ -354,44 +355,54 @@ export default function HomePage() {
           <Code2 size={20} />
         </button>
       </div>
+
       {/* HERO SECTION */}
-      <section className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-gray-50 pt-24 text-gray-900 dark:bg-black dark:text-white">
-        {/* Hero Images Background */}
-        {heroImages.length > 0 && (
-          <div className="absolute inset-0">
-            <img
-              src={getAssetUrl(heroImages[currentHeroImage]?.imageUrl)}
-              alt={heroImages[currentHeroImage]?.altText || 'Hero Image'}
-              className="w-full h-full object-cover opacity-10 mix-blend-luminosity"
-            />
-            <div className="absolute inset-0 bg-gray-50/90 dark:bg-black/90" />
-          </div>
-        )}
+      <section className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-gray-900 pt-24 text-white">
+        {/* Hero Images Background Slideshow */}
+        <div className="absolute inset-0 z-0">
+          {heroImages.length > 0 ? heroImages.map((image, idx) => (
+            <div
+              key={idx}
+              className={clsx(
+                "absolute inset-0 transition-opacity duration-1000 ease-in-out",
+                currentHeroImage === idx ? "opacity-100" : "opacity-0"
+              )}
+            >
+              <img
+                src={getAssetUrl(image.imageUrl)}
+                alt={image.altText || 'Hero Background'}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/20" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-gray-900/90" />
+            </div>
+          )) : (
+            <div className="absolute inset-0 bg-gray-900" />
+          )}
+        </div>
 
         {/* Particle canvas background */}
-        <canvas ref={particlesRef} className="absolute inset-0 w-full h-full pointer-events-none opacity-20" />
+        <canvas ref={particlesRef} className="absolute inset-0 w-full h-full pointer-events-none opacity-40 z-1" />
 
-        <div className="absolute inset-0 bg-gradient-to-b from-cyan-50/60 via-gray-50 to-gray-50 dark:from-cyan-950/20 dark:via-black dark:to-black pointer-events-none" />
-        <div className="absolute left-1/2 top-24 h-[580px] w-[580px] -translate-x-1/2 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-white dark:to-gray-950 pointer-events-none" />
+        <div className="absolute left-1/2 top-24 h-[580px] w-[580px] -translate-x-1/2 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none z-1" />
 
         <div className="relative z-10 page-container">
           <div className="grid min-h-[calc(100vh-120px)] items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="flex justify-center lg:justify-start">
               <div className="hero-service-orbit" aria-label="EduJobs Scholars services">
-                <div className="hero-service-center">
-                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-700">Welcome to</p>
-                  <p className="mt-3 text-2xl font-black leading-tight text-gray-800">EduJobs Scholars</p>
-                  <p className="mt-4 text-sm font-semibold leading-relaxed text-gray-600">
+                <div className="hero-service-center !bg-white shadow-2xl border border-white">
+                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-600">Welcome to</p>
+                  <p className="mt-3 text-2xl font-black leading-tight text-gray-900">EduJobs Scholars</p>
+                  <p className="mt-4 text-sm font-semibold leading-relaxed text-gray-500">
                     Your gateway to universities, guidance, jobs, and opportunities.
                   </p>
                 </div>
                 <div className="hero-service-path">
                   {heroServices.map((service) => (
                     <div key={service.label} className={`hero-service-node ${service.className}`}>
-                      <div className="hero-service-node-inner">
-                        {service.icon}
-                        <span>{service.label}</span>
+                      <div className="hero-service-node-inner !bg-white shadow-lg border border-gray-100">
+                        <div className="text-cyan-600">{service.icon}</div>
+                        <span className="text-gray-900 font-bold">{service.label}</span>
                       </div>
                     </div>
                   ))}
@@ -400,60 +411,65 @@ export default function HomePage() {
             </div>
 
             <div className="pb-20 pt-4 text-center lg:text-left">
-              <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-700 backdrop-blur-sm animate-fade-in dark:text-cyan-300">
-                <Star size={14} className="text-cyan-500" />
+              <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/20 px-4 py-2 text-sm font-medium text-cyan-300 backdrop-blur-md animate-fade-in">
+                <Star size={14} className="text-cyan-400" />
                 Connecting Rwanda's best students to global opportunities
               </div>
 
               <TypewriterHeadline />
 
-              <p className="mx-auto mt-8 max-w-2xl text-lg leading-9 text-gray-600 md:text-xl lg:mx-0 dark:text-gray-400 animate-slide-up animation-delay-200">
+              <p className="mx-auto mt-8 max-w-2xl text-lg leading-9 text-gray-100 md:text-xl lg:mx-0 animate-slide-up animation-delay-200 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
                 Discover universities, scholarships, career opportunities, and practical guidance designed to help school graduates choose a path, prepare well, and move forward with confidence.
               </p>
 
               <form onSubmit={handleSearch} className="mx-auto mt-9 max-w-2xl animate-slide-up animation-delay-300 lg:mx-0">
-                <div className="flex flex-col gap-2 rounded-2xl border border-cyan-500/20 bg-white p-2 shadow-xl shadow-cyan-100 sm:flex-row dark:bg-gray-900/80 dark:shadow-cyan-950/20">
+                <div className="flex flex-col gap-2 rounded-2xl border border-white/20 bg-black/30 backdrop-blur-md p-2 shadow-2xl sm:flex-row">
                   <select
                     value={searchType}
                     onChange={(e) => setSearchType(e.target.value)}
-                    className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-sm font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="rounded-xl border border-white/10 bg-white/10 px-3 py-3 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   >
-                    <option value="all">All</option>
-                    <option value="universities">Universities</option>
-                    <option value="jobs">Jobs</option>
+                    <option value="all" className="bg-gray-900">All</option>
+                    <option value="universities" className="bg-gray-900">Universities</option>
+                    <option value="jobs" className="bg-gray-900">Jobs</option>
                   </select>
                   <div className="relative flex-1">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70" />
                     <input
                       type="text"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder="Search universities, programs, jobs..."
-                      className="w-full rounded-xl bg-transparent py-3 pl-9 pr-4 text-sm text-gray-900 placeholder-gray-500 focus:outline-none"
+                      className="w-full rounded-xl bg-transparent py-3 pl-9 pr-4 text-sm text-white placeholder-white/60 focus:outline-none"
                     />
                   </div>
-                  <button type="submit" className="btn-primary flex items-center justify-center gap-2 rounded-xl py-3">
+                  <button type="submit" className="btn-primary flex items-center justify-center gap-2 rounded-xl py-3 shadow-lg shadow-cyan-500/30">
                     <Search size={14} /> Search
                   </button>
                 </div>
               </form>
 
               <div className="mt-8 flex flex-wrap items-center justify-center gap-4 animate-slide-up animation-delay-500 lg:justify-start">
-                <Link to="/universities" className="btn-primary inline-flex items-center gap-2 px-7 py-3.5">
+                <Link to="/universities" className="btn-primary inline-flex items-center gap-2 px-7 py-3.5 shadow-lg shadow-cyan-500/30">
                   <GraduationCap size={18} /> Explore Universities
                 </Link>
-                <Link to="/jobs" className="btn-secondary inline-flex items-center gap-2 px-7 py-3.5">
-                  <Briefcase size={18} /> Find Opportunities
-                </Link>
+                <a 
+                  href="https://chat.whatsapp.com/BDEAa9Knxs7J3SCarkhvvE" 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="btn-secondary !bg-green-500/10 !text-green-500 !border-green-500/20 backdrop-blur-sm inline-flex items-center gap-2 px-7 py-3.5 hover:!bg-green-500/20"
+                >
+                  <MessageCircle size={18} /> Join WhatsApp Group
+                </a>
               </div>
 
               <div className="mt-14 grid grid-cols-3 gap-4 text-left sm:gap-8">
                 {stats.map((stat) => (
                   <div key={stat.label}>
-                    <div className="text-3xl font-black leading-none text-gray-900 md:text-5xl dark:text-white">
+                    <div className="text-3xl font-black leading-none text-white md:text-5xl drop-shadow-lg">
                       <Counter end={stat.value} suffix={stat.suffix} repeat />
                     </div>
-                    <div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-gray-500 sm:text-sm dark:text-gray-400">
+                    <div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-gray-200 sm:text-sm drop-shadow-sm">
                       {stat.label}
                     </div>
                   </div>
@@ -463,7 +479,7 @@ export default function HomePage() {
           </div>
 
           {/* Scroll down hint */}
-          <div className="absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 text-gray-500 dark:text-gray-400 animate-bounce">
+          <div className="absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 text-white/80 animate-bounce">
             <span className="text-xs">Scroll to explore</span>
             <ChevronDown size={16} />
           </div>
@@ -504,6 +520,79 @@ export default function HomePage() {
               </div>
             </>
           )}
+        </div>
+      </section>
+
+      {/* COMMUNITY / WHATSAPP SECTION */}
+      <section className="py-24 bg-slate-50 dark:bg-black/20 transition-colors duration-500">
+        <div className="page-container">
+          <div className="relative overflow-hidden rounded-[3rem] bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200 dark:border-cyan-500/20 p-8 md:p-20 text-center shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] dark:shadow-2xl dark:shadow-black/50 transition-all duration-500">
+            {/* Background Decorations */}
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-cyan-500/10 dark:bg-cyan-500/10 rounded-full blur-[120px] -mr-64 -mt-64" />
+            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/10 dark:bg-blue-500/10 rounded-full blur-[120px] -ml-64 -mb-64" />
+
+            <div className="relative z-10 max-w-4xl mx-auto">
+              <div className="inline-flex items-center justify-center w-24 h-24 rounded-[2.5rem] bg-gradient-to-br from-cyan-500 to-blue-600 text-white mb-10 shadow-[0_20px_40px_-8px_rgba(6,182,212,0.3)] animate-bounce-slow text-3xl font-black">
+                <MessageCircle size={52} />
+              </div>
+              
+              <h2 className="text-4xl md:text-6xl font-black text-gray-900 dark:text-white mb-8 tracking-tight leading-tight">
+                Step into the Circle of <span className="gradient-text text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-blue-600">EduJobs Scholars</span>
+              </h2>
+              
+              <p className="text-gray-700 dark:text-gray-400 text-xl md:text-2xl mb-12 leading-relaxed font-medium">
+                Join EduJobs Scholars and stay connected with new opportunities. Get scholarship updates, job alerts, and guidance to help you achieve your education and career goals.
+
+              </p>
+              
+              <div className="flex flex-col items-center justify-center gap-12">
+                <a 
+                  href="https://chat.whatsapp.com/BDEAa9Knxs7J3SCarkhvvE" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="w-full sm:w-auto px-16 py-7 rounded-[2.5rem] bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-black text-2xl hover:shadow-[0_20px_40px_-8px_rgba(6,182,212,0.5)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4 group relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-white/10 group-hover:translate-x-full transition-transform duration-700 ease-in-out -skew-x-12 -translate-x-full" />
+                  Join the Network <ArrowRight size={32} className="group-hover:translate-x-2 transition-transform" />
+                </a>
+                
+                <div className="flex flex-col items-center gap-6">
+                  <div className="flex items-center">
+                    <div className="flex -space-x-5">
+                      {successStories.length > 0 ? successStories.slice(0, 6).map((story, i) => (
+                        <div key={story._id} className="w-16 h-16 rounded-full border-4 border-white dark:border-gray-900 bg-gray-200 dark:bg-gray-800 flex items-center justify-center overflow-hidden shadow-xl transition-all duration-300 hover:scale-125 hover:z-30 hover:-translate-y-2 group/avatar">
+                          <img 
+                            src={getAssetUrl(story.profileImage)} 
+                            alt={story.fullName} 
+                            className="w-full h-full object-cover transition-transform group-hover/avatar:scale-110" 
+                            title={story.fullName} 
+                          />
+                        </div>
+                      )) : [1, 2, 3, 4, 5, 6].map(i => (
+                        <div key={i} className="w-16 h-16 rounded-full border-4 border-white dark:border-gray-900 bg-gray-200 dark:bg-gray-800 flex items-center justify-center overflow-hidden shadow-xl">
+                          <div className="w-full h-full bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-700 dark:to-gray-800 animate-pulse" />
+                        </div>
+                      ))}
+                      <div className="w-16 h-16 rounded-full border-4 border-white dark:border-gray-900 bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-lg shadow-2xl relative z-20 hover:scale-110 transition-transform cursor-default">
+                        <span className="animate-pulse">+1.2k</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 bg-white dark:bg-gray-800 px-6 py-2.5 rounded-full shadow-lg border border-gray-100 dark:border-gray-700 transition-all hover:border-cyan-500/50">
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map(i => (
+                        <Star key={i} size={14} className="fill-yellow-400 text-yellow-400" />
+                      ))}
+                    </div>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm font-bold uppercase tracking-[0.2em]">
+                      Helping Rwanda's Future Talent
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -879,7 +968,7 @@ export default function HomePage() {
                         <div className={`mb-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest ${
                           ad.accent === 'cyan'
                             ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
-                            : 'border-orange-500/30 bg-orange-500/10 text-orange-600 dark:text-orange-400'
+                            : 'border-orange-500/30 bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400'
                         }`}>
                           <Sparkles size={10} /> {ad.badge}
                         </div>

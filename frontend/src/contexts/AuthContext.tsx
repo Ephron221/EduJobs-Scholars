@@ -5,7 +5,7 @@ export interface User {
   _id: string;
   name: string;
   email: string;
-  role: 'student' | 'admin' | 'jobseeker';
+  role: 'student' | 'admin' | 'jobseeker' | 'assistant';
   avatar?: string;
   savedOpportunities: { id: string; type: 'university' | 'job' }[];
   isActive: boolean;
@@ -21,6 +21,7 @@ interface AuthContextType {
   logout: () => void;
   updateUser: (user: User) => void;
   isAdmin: boolean;
+  isAssistant: boolean;
   isJobseeker: boolean;
   isAuthenticated: boolean;
 }
@@ -86,6 +87,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       user, token, loading,
       login, register, logout, updateUser,
       isAdmin: user?.role === 'admin',
+      isAssistant: user?.role === 'assistant',
       isJobseeker: user?.role === 'jobseeker',
       isAuthenticated: !!user,
     }}>

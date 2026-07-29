@@ -16,6 +16,11 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const getRedirectPath = (role: string) => {
+    if (role === 'admin' || role === 'assistant') return '/admin';
+    return '/dashboard';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -30,7 +35,7 @@ const LoginPage = () => {
       toast.success(`Welcome back, ${res.data.user.name.split(' ')[0]}! 👋`);
       
       setTimeout(() => {
-        navigate(userRole === 'admin' ? '/admin' : '/dashboard');
+        navigate(getRedirectPath(userRole));
         window.location.reload(); 
       }, 500);
     } catch (err: any) {
@@ -56,7 +61,7 @@ const LoginPage = () => {
       localStorage.setItem('user', JSON.stringify(res.data.user));
       
       toast.success('Signed in with Google! 🚀');
-      navigate(res.data.user.role === 'admin' ? '/admin' : '/dashboard');
+      navigate(getRedirectPath(res.data.user.role));
       window.location.reload();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Google login failed');

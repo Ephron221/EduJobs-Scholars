@@ -24,6 +24,18 @@ export const getUsers = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+export const getPublicAssistants = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    // Only return basic info of active assistants
+    const assistants = await User.find({ role: 'assistant', isActive: true })
+      .select('name email avatar')
+      .sort({ name: 1 });
+    res.json({ users: assistants });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to get assistants', error });
+  }
+};
+
 export const getUserById = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = await User.findById(req.params.id);
@@ -112,6 +124,7 @@ export const getUserStats = async (_req: Request, res: Response): Promise<void> 
       totalUsers,
       studentCount,
       jobseekerCount,
+      assistantCount,
       adminCount,
       activeCount,
       disabledCount,
@@ -123,6 +136,7 @@ export const getUserStats = async (_req: Request, res: Response): Promise<void> 
       User.countDocuments(),
       User.countDocuments({ role: 'student' }),
       User.countDocuments({ role: 'jobseeker' }),
+      User.countDocuments({ role: 'assistant' }),
       User.countDocuments({ role: 'admin' }),
       User.countDocuments({ isActive: true }),
       User.countDocuments({ isActive: false }),
@@ -140,6 +154,7 @@ export const getUserStats = async (_req: Request, res: Response): Promise<void> 
       totalUsers,
       studentCount,
       jobseekerCount,
+      assistantCount,
       adminCount,
       activeCount,
       disabledCount,
@@ -157,9 +172,9 @@ export const getUserStats = async (_req: Request, res: Response): Promise<void> 
 export const updateUserRole = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { role } = req.body;
-    const allowedRoles = ['student', 'admin', 'jobseeker'];
+    const allowedRoles = ['student', 'admin', 'jobseeker', 'assistant'];
     if (!role || !allowedRoles.includes(role)) {
-      res.status(400).json({ message: 'Invalid role. Must be student, jobseeker, or admin.' });
+      res.status(400).json({ message: 'Invalid role.' });
       return;
     }
 

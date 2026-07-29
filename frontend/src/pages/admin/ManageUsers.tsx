@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Search, Users, UserCheck, UserX, Trash2, Shield, TrendingUp, TrendingDown,
   ChevronDown, Edit3, X, Save, Mail, Calendar, CheckCircle2, XCircle,
-  UserPlus, Activity, Eye, Briefcase, GraduationCap, BadgeCheck
+  UserPlus, Activity, Eye, Briefcase, GraduationCap, BadgeCheck, LifeBuoy
 } from 'lucide-react';
 import { userAPI } from '../../api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -21,7 +21,7 @@ interface User {
 }
 
 interface UserStats {
-  totalUsers: number; studentCount: number; jobseekerCount: number; adminCount: number;
+  totalUsers: number; studentCount: number; jobseekerCount: number; assistantCount: number; adminCount: number;
   activeCount: number; disabledCount: number; verifiedCount: number; unverifiedCount: number;
   newThisMonth: number; newLastMonth: number; growthPercent: number;
 }
@@ -122,6 +122,13 @@ function MiniStat({ icon, label, value, color }: { icon: React.ReactNode; label:
   );
 }
 
+const ROLES = [
+  { value: 'student', label: 'Student', icon: <GraduationCap size={13} />, color: 'bg-gray-200/50 dark:bg-gray-700 text-gray-600 dark:text-gray-300' },
+  { value: 'jobseeker', label: 'Jobseeker', icon: <Briefcase size={13} />, color: 'bg-purple-500/20 text-purple-600 dark:text-purple-300' },
+  { value: 'assistant', label: 'Assistant', icon: <LifeBuoy size={13} />, color: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300' },
+  { value: 'admin', label: 'Admin', icon: <Shield size={13} />, color: 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300' },
+];
+
 /* ───────── Role Dropdown ───────── */
 function RoleDropdown({ currentRole, userId, currentUserId, onRoleChanged }: {
   currentRole: string; userId: string; currentUserId: string;
@@ -138,13 +145,7 @@ function RoleDropdown({ currentRole, userId, currentUserId, onRoleChanged }: {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const roles = [
-    { value: 'student', label: 'Student', icon: <GraduationCap size={13} />, color: 'bg-gray-200/50 dark:bg-gray-700 text-gray-600 dark:text-gray-300' },
-    { value: 'jobseeker', label: 'Jobseeker', icon: <Briefcase size={13} />, color: 'bg-purple-500/20 text-purple-600 dark:text-purple-300' },
-    { value: 'admin', label: 'Admin', icon: <Shield size={13} />, color: 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300' },
-  ];
-
-  const current = roles.find(r => r.value === currentRole) || roles[0];
+  const current = ROLES.find(r => r.value === currentRole) || ROLES[0];
 
   const handleChange = async (newRole: string) => {
     if (newRole === currentRole) { setOpen(false); return; }
@@ -181,7 +182,7 @@ function RoleDropdown({ currentRole, userId, currentUserId, onRoleChanged }: {
 
       {open && !isSelf && (
         <div className="absolute top-full left-0 mt-1.5 w-40 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/15 shadow-xl shadow-black/20 z-50 overflow-hidden animate-slide-up">
-          {roles.map(r => (
+          {ROLES.map(r => (
             <button
               key={r.value}
               onClick={() => handleChange(r.value)}
@@ -251,6 +252,7 @@ function EditUserModal({ user, isOpen, onClose, onSaved, currentUserId }: {
             'w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-lg shrink-0 shadow-lg',
             user.role === 'admin' ? 'bg-gradient-to-br from-cyan-400 to-cyan-600 text-black' :
             user.role === 'jobseeker' ? 'bg-gradient-to-br from-purple-500 to-purple-700 text-white' :
+            user.role === 'assistant' ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-black' :
             'bg-gradient-to-br from-gray-600 to-gray-800 text-white'
           )}>
             {user.name.charAt(0).toUpperCase()}
@@ -297,6 +299,7 @@ function EditUserModal({ user, isOpen, onClose, onSaved, currentUserId }: {
           >
             <option value="student">Student</option>
             <option value="jobseeker">Jobseeker</option>
+            <option value="assistant">Assistant</option>
             <option value="admin">Admin</option>
           </select>
         </div>
@@ -434,15 +437,13 @@ export default function ManageUsers() {
               gradient="bg-gradient-to-br from-blue-500 to-blue-700 shadow-blue-500/30"
               label="Students"
               value={stats.studentCount}
-              trendLabel={stats.totalUsers > 0 ? `${Math.round((stats.studentCount / stats.totalUsers) * 100)}% of total` : ''}
               delay={80}
             />
             <StatCard
-              icon={<Briefcase size={20} className="text-white" />}
-              gradient="bg-gradient-to-br from-purple-500 to-purple-700 shadow-purple-500/30"
-              label="Jobseekers"
-              value={stats.jobseekerCount}
-              trendLabel={stats.totalUsers > 0 ? `${Math.round((stats.jobseekerCount / stats.totalUsers) * 100)}% of total` : ''}
+              icon={<LifeBuoy size={20} className="text-white" />}
+              gradient="bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-emerald-500/30"
+              label="Assistants"
+              value={stats.assistantCount}
               delay={160}
             />
             <StatCard
@@ -450,7 +451,6 @@ export default function ManageUsers() {
               gradient="bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-500/30"
               label="Admins"
               value={stats.adminCount}
-              trendLabel={stats.totalUsers > 0 ? `${Math.round((stats.adminCount / stats.totalUsers) * 100)}% of total` : ''}
               delay={240}
             />
           </>
@@ -482,6 +482,7 @@ export default function ManageUsers() {
             <option value="">All Roles</option>
             <option value="student">Student</option>
             <option value="jobseeker">Jobseeker</option>
+            <option value="assistant">Assistant</option>
             <option value="admin">Admin</option>
           </select>
         </div>
@@ -553,6 +554,7 @@ export default function ManageUsers() {
                           'w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-transform duration-200 group-hover/row:scale-110',
                           u.role === 'admin' ? 'bg-gradient-to-br from-cyan-400 to-cyan-600 text-black' :
                           u.role === 'jobseeker' ? 'bg-gradient-to-br from-purple-500 to-purple-700 text-white' :
+                          u.role === 'assistant' ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-black' :
                           'bg-gradient-to-br from-gray-600 to-gray-800 text-white'
                         )}>
                           {u.name.charAt(0).toUpperCase()}

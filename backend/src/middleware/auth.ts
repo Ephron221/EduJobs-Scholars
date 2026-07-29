@@ -35,3 +35,11 @@ export const adminOnly = (req: AuthRequest, res: Response, next: NextFunction): 
   }
   next();
 };
+
+export const staffOnly = (req: AuthRequest, res: Response, next: NextFunction): void => {
+  if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'assistant')) {
+    res.status(403).json({ message: 'Access denied. Privileged access required.' });
+    return;
+  }
+  next();
+};

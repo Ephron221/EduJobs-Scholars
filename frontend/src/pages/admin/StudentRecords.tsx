@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, Pencil, Trash2, Users, Search, GraduationCap, CheckCircle, Ban, Eye, FileText, Activity, Download, UploadCloud, ArrowUpRight } from 'lucide-react';
 import { studentAPI } from '../../api';
+import { useAuth } from '../../contexts/AuthContext';
 import AdminLayout from './AdminLayout';
 import Modal from '../../components/Modal';
 import StatusBadge from '../../components/StatusBadge';
@@ -83,6 +84,7 @@ const EMPTY_FORM = {
 };
 
 export default function StudentRecords() {
+  const { isAdmin } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, active: 0, pending: 0, suspended: 0, graduated: 0 });
@@ -512,7 +514,9 @@ export default function StudentRecords() {
                         </button>
                         <button onClick={() => openView(s)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/10 transition-all"><Eye size={14} /></button>
                         <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all"><Pencil size={14} /></button>
-                        <button onClick={() => setDeleteId(s._id)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"><Trash2 size={14} /></button>
+                        {isAdmin && (
+                          <button onClick={() => setDeleteId(s._id)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"><Trash2 size={14} /></button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -630,9 +634,11 @@ export default function StudentRecords() {
                                 <button type="button" title="Replace" onClick={() => openReplaceFile(viewModal._id, doc.url, category)} disabled={fileActionLoading} className="btn-primary btn-sm p-2 rounded-lg">
                                   <UploadCloud size={16} />
                                 </button>
-                                <button type="button" title="Delete" onClick={() => handleDeleteFile(viewModal._id, doc.url)} disabled={fileActionLoading} className="btn-danger btn-sm p-2 rounded-lg">
-                                  <Trash2 size={16} />
-                                </button>
+                                {isAdmin && (
+                                  <button type="button" title="Delete" onClick={() => handleDeleteFile(viewModal._id, doc.url)} disabled={fileActionLoading} className="btn-danger btn-sm p-2 rounded-lg">
+                                    <Trash2 size={16} />
+                                  </button>
+                                )}
                               </div>
                             </div>
                           ))}
@@ -770,7 +776,7 @@ export default function StudentRecords() {
           <div>
             <h4 className="text-sm font-bold text-cyan-500 mb-3 uppercase tracking-wider">Account & Contact</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email *</label>
+              <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email *</label>
                 <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="input-field py-2" required /></div>
               <div><label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number *</label>
                 <input type="tel" value={form.phoneNumber} onChange={e => setForm({...form, phoneNumber: e.target.value})} className="input-field py-2" required /></div>

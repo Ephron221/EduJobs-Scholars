@@ -2,7 +2,7 @@ import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, GraduationCap, BookOpen, Briefcase, Users, User,
-  ClipboardList, Bell, FileText, LogOut, ChevronRight, Shield, Home, MessageSquare, Menu, X
+  ClipboardList, Bell, FileText, LogOut, ChevronRight, Shield, Home, MessageSquare, Menu, X, LifeBuoy
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAssetUrl } from '../../utils/assetUrl';
@@ -10,18 +10,18 @@ import ThemeToggle from '../../components/ThemeToggle';
 import clsx from 'clsx';
 
 const navItems = [
-  { href: '/admin', label: 'Overview', icon: <LayoutDashboard size={17} />, exact: true },
-  { href: '/admin/universities', label: 'Universities', icon: <GraduationCap size={17} /> },
-  { href: '/admin/programs', label: 'Programs', icon: <BookOpen size={17} /> },
-  { href: '/admin/jobs', label: 'Jobs', icon: <Briefcase size={17} /> },
-  { href: '/admin/assistance-requests', label: 'Assistance Requests', icon: <ClipboardList size={17} /> },
-  { href: '/admin/student-records', label: 'Student Records', icon: <ClipboardList size={17} /> },
-  { href: '/admin/users', label: 'Users', icon: <Users size={17} /> },
-  { href: '/admin/guidance', label: 'Guidance', icon: <FileText size={17} /> },
-  { href: '/admin/messages', label: 'Inquiries', icon: <MessageSquare size={17} /> },
-  { href: '/admin/announcements', label: 'Announcements', icon: <Bell size={17} /> },
-  { href: '/admin/hero-images', label: 'Hero Images', icon: <Home size={17} /> },
-  { href: '/admin/success-stories', label: 'Success Stories', icon: <User size={17} /> },
+  { href: '/admin', label: 'Overview', icon: <LayoutDashboard size={17} />, exact: true, roles: ['admin', 'assistant'] },
+  { href: '/admin/assistance-requests', label: 'Assistance Requests', icon: <ClipboardList size={17} />, roles: ['admin', 'assistant'] },
+  { href: '/admin/student-records', label: 'Student Records', icon: <ClipboardList size={17} />, roles: ['admin', 'assistant'] },
+  { href: '/admin/universities', label: 'Universities', icon: <GraduationCap size={17} />, roles: ['admin', 'assistant'] },
+  { href: '/admin/programs', label: 'Programs', icon: <BookOpen size={17} />, roles: ['admin'] },
+  { href: '/admin/jobs', label: 'Jobs', icon: <Briefcase size={17} />, roles: ['admin', 'assistant'] },
+  { href: '/admin/users', label: 'Users', icon: <Users size={17} />, roles: ['admin'] },
+  { href: '/admin/guidance', label: 'Guidance', icon: <FileText size={17} />, roles: ['admin'] },
+  { href: '/admin/messages', label: 'Inquiries', icon: <MessageSquare size={17} />, roles: ['admin', 'assistant'] },
+  { href: '/admin/announcements', label: 'Announcements', icon: <Bell size={17} />, roles: ['admin', 'assistant'] },
+  { href: '/admin/hero-images', label: 'Hero Images', icon: <Home size={17} />, roles: ['admin'] },
+  { href: '/admin/success-stories', label: 'Success Stories', icon: <User size={17} />, roles: ['admin'] },
 ];
 
 export default function AdminLayout({ children, title }: { children: ReactNode; title: string }) {
@@ -31,10 +31,17 @@ export default function AdminLayout({ children, title }: { children: ReactNode; 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const isActive = (item: typeof navItems[0]) =>
-    item.exact ? location.pathname === item.href : location.pathname === item.href;
+  const isActive = (href: string, exact?: boolean) =>
+    exact ? location.pathname === href : location.pathname.startsWith(href);
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+  // Filter items based on user role
+  const filteredNavItems = navItems.filter(item => 
+    !item.roles || (user && item.roles.includes(user.role))
+  );
+
+  const roleLabel = user?.role === 'admin' ? 'Administrator' : user?.role === 'assistant' ? 'Application Assistant' : 'Staff';
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-950 flex transition-colors duration-300">
@@ -58,8 +65,13 @@ export default function AdminLayout({ children, title }: { children: ReactNode; 
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg flex items-center justify-center text-black font-black text-sm">EJ</div>
             <div>
-              <div className="font-bold text-sm text-gray-900 dark:text-white">Admin Panel</div>
-              <div className="text-xs text-cyan-400 flex items-center gap-1"><Shield size={10} /> EduJobs Scholars</div>
+              <div className="font-bold text-sm text-gray-900 dark:text-white truncate max-w-[120px]">
+                {user?.role === 'assistant' ? 'Assistant Panel' : 'Admin Panel'}
+              </div>
+              <div className="text-xs text-cyan-400 flex items-center gap-1">
+                {user?.role === 'assistant' ? <LifeBuoy size={10} /> : <Shield size={10} />} 
+                EduJobs Scholars
+              </div>
             </div>
           </div>
           <button onClick={closeMobileMenu} className="md:hidden p-1 text-gray-500">
@@ -68,10 +80,10 @@ export default function AdminLayout({ children, title }: { children: ReactNode; 
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-          {navItems.map((item) => (
+        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto sidebar-nav">
+          {filteredNavItems.map((item) => (
             <Link key={item.href} to={item.href} onClick={closeMobileMenu}
-              className={isActive(item) ? 'sidebar-item-active' : 'sidebar-item'}>
+              className={isActive(item.href, item.exact) ? 'sidebar-item-active' : 'sidebar-item'}>
               {item.icon} {item.label}
             </Link>
           ))}
@@ -102,8 +114,8 @@ export default function AdminLayout({ children, title }: { children: ReactNode; 
             <div>
               <h1 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h1>
               <div className="items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:flex">
-                <Shield size={11} className="text-cyan-500" />
-                <span>Admin</span>
+                {user?.role === 'assistant' ? <LifeBuoy size={11} className="text-emerald-500" /> : <Shield size={11} className="text-cyan-500" />}
+                <span>{roleLabel}</span>
                 <ChevronRight size={10} />
                 <span className="text-gray-600 dark:text-gray-400">{title}</span>
               </div>
@@ -126,8 +138,8 @@ export default function AdminLayout({ children, title }: { children: ReactNode; 
                   </div>
                 )}
                 <div className="hidden sm:flex flex-col items-start truncate">
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user?.name}</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Administrator</span>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[100px]">{user?.name}</span>
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400">{roleLabel}</span>
                 </div>
               </button>
 
@@ -136,8 +148,11 @@ export default function AdminLayout({ children, title }: { children: ReactNode; 
                   <div className="p-4 border-b border-gray-200 dark:border-white/10">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user?.name}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
-                    <span className="text-xs inline-flex items-center px-2 py-1 mt-2 rounded-full bg-cyan-500/10 text-cyan-700 dark:text-cyan-300">
-                      ⚡ Administrator
+                    <span className={clsx(
+                      "text-[10px] inline-flex items-center px-2 py-0.5 mt-2 rounded-full font-bold uppercase tracking-wider",
+                      user?.role === 'assistant' ? "bg-emerald-500/10 text-emerald-500" : "bg-cyan-500/10 text-cyan-500"
+                    )}>
+                      {user?.role === 'assistant' ? '⚡ Assistant' : '⚡ Administrator'}
                     </span>
                   </div>
                   <div className="p-2">

@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { getDashboardStats, getRecentActivity } from '../controllers/stats.controller';
-import { protect, adminOnly } from '../middleware/auth';
+import { protect, staffOnly } from '../middleware/auth';
 
 const router = Router();
 
-router.get('/dashboard', protect, adminOnly, getDashboardStats);
-router.get('/activity', protect, adminOnly, getRecentActivity);
+router.get('/dashboard', protect, staffOnly, getDashboardStats);
+router.get('/activity', protect, staffOnly, getRecentActivity);
 
 export default router;

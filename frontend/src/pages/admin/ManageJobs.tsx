@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, Trash2, Briefcase, Search, MapPin, Star, Paperclip } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Plus, Pencil, Trash2, Briefcase, Search, MapPin, Star, Paperclip, CheckCircle, XCircle, BarChart3, Clock } from 'lucide-react';
 import { jobAPI } from '../../api';
+import { useAuth } from '../../contexts/AuthContext';
 import AdminLayout from './AdminLayout';
 import Modal from '../../components/Modal';
 import Loader from '../../components/Loader';
 import FileUploadPanel from '../../components/FileUploadPanel';
 import toast from 'react-hot-toast';
-import { format } from 'date-fns';
+import { format, isPast } from 'date-fns';
 import clsx from 'clsx';
 
 interface DocEntry { name: string; url: string; uploadedAt: string }
@@ -32,6 +33,7 @@ const EMPTY = {
 type Tab = 'details' | 'files';
 
 export default function ManageJobs() {
+  const { isAdmin } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -53,6 +55,21 @@ export default function ManageJobs() {
   }, [search, filterType]);
 
   useEffect(() => { fetchJobs(); }, [fetchJobs]);
+
+  const stats = useMemo(() => {
+    const total = jobs.length;
+    const open = jobs.filter(j => !isPast(new Date(j.deadline))).length;
+    const closed = total - open;
+    const featured = jobs.filter(j => j.featured).length;
+    
+    // Group by title for "statistics for job name"
+    const nameStats = jobs.reduce((acc, job) => {
+      acc[job.title] = (acc[job.title] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return { total, open, closed, featured, nameStats };
+  }, [jobs]);
 
   const openCreate = () => { setForm(EMPTY); setEditItem(null); setActiveTab('details'); setModalOpen(true); };
   const openEdit = (j: Job) => {
@@ -94,6 +111,46 @@ export default function ManageJobs() {
 
   return (
     <AdminLayout title="Manage Jobs">
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="glass-card p-4 flex items-center gap-4">
+          <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-500">
+            <BarChart3 size={24} />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-semibold">Total Listings</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+          </div>
+        </div>
+        <div className="glass-card p-4 flex items-center gap-4">
+          <div className="p-3 bg-green-500/10 rounded-xl text-green-500">
+            <CheckCircle size={24} />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-semibold">Open Jobs</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.open}</p>
+          </div>
+        </div>
+        <div className="glass-card p-4 flex items-center gap-4">
+          <div className="p-3 bg-red-500/10 rounded-xl text-red-500">
+            <XCircle size={24} />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-semibold">Closed/Expired</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.closed}</p>
+          </div>
+        </div>
+        <div className="glass-card p-4 flex items-center gap-4">
+          <div className="p-3 bg-yellow-500/10 rounded-xl text-yellow-500">
+            <Star size={24} />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-semibold">Featured</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.featured}</p>
+          </div>
+        </div>
+      </div>
+
       <div className="flex flex-col sm:flex-row gap-3 justify-between mb-6">
         <div className="flex gap-3 flex-1">
           <div className="relative flex-1 max-w-xs">
@@ -114,52 +171,68 @@ export default function ManageJobs() {
         <div className="glass-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="border-b border-gray-200 dark:border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900/2">
+              <thead className="border-b border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-gray-900/40">
                 <tr>
                   <th className="table-header">Job</th>
                   <th className="table-header">Company</th>
+                  <th className="table-header">Status</th>
                   <th className="table-header">Type</th>
-                  <th className="table-header">Location</th>
-                  <th className="table-header">Files</th>
+                  <th className="table-header text-center">Files</th>
                   <th className="table-header">Deadline</th>
                   <th className="table-header text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-200 dark:divide-white/5">
                 {jobs.length === 0 ? (
                   <tr><td colSpan={7} className="py-16 text-center text-gray-500 dark:text-gray-400">No jobs found</td></tr>
                 ) : jobs.map((j) => {
-                  const expired = new Date(j.deadline) < new Date();
+                  const expired = isPast(new Date(j.deadline));
                   return (
-                    <tr key={j._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors border-b border-transparent last:border-0">
+                    <tr key={j._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors">
                       <td className="table-cell">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900 dark:text-white">{j.title}</span>
-                          {j.featured && <Star size={12} className="text-yellow-400" />}
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white leading-tight">{j.title}</p>
+                            <p className="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5"><MapPin size={8} /> {j.location}</p>
+                          </div>
+                          {j.featured && <Star size={12} className="text-yellow-400 fill-yellow-400" />}
                         </div>
                       </td>
                       <td className="table-cell text-gray-600 dark:text-gray-400">{j.company}</td>
                       <td className="table-cell">
-                        <span className={clsx('text-xs px-2 py-0.5 rounded capitalize', TYPE_COLORS[j.type] || 'bg-gray-500/20 text-gray-700 dark:text-gray-300')}>{j.type}</span>
+                        {expired ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 font-medium">
+                            <Clock size={10} /> Closed
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-medium">
+                            <CheckCircle size={10} /> Open
+                          </span>
+                        )}
                       </td>
-                      <td className="table-cell text-xs text-gray-600 dark:text-gray-400"><span className="flex items-center gap-1"><MapPin size={10} className="text-cyan-600" />{j.location}</span></td>
                       <td className="table-cell">
+                        <span className={clsx('text-[10px] px-2 py-0.5 rounded capitalize font-medium', TYPE_COLORS[j.type] || 'bg-gray-500/20 text-gray-700 dark:text-gray-300')}>
+                          {j.type}
+                        </span>
+                      </td>
+                      <td className="table-cell text-center">
                         {fileCount(j) > 0 ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-cyan-400">
+                          <span className="inline-flex items-center gap-1 text-xs text-cyan-400 font-medium bg-cyan-400/10 px-2 py-0.5 rounded-full">
                             <Paperclip size={11} /> {fileCount(j)}
                           </span>
                         ) : (
                           <span className="text-xs text-gray-400">—</span>
                         )}
                       </td>
-                      <td className={clsx('table-cell text-xs', expired ? 'text-red-400' : 'text-gray-600 dark:text-gray-400')}>
+                      <td className={clsx('table-cell text-xs font-medium', expired ? 'text-red-400' : 'text-gray-600 dark:text-gray-400')}>
                         {j.deadline ? format(new Date(j.deadline), 'MMM dd, yyyy') : '—'}
-                        {expired && ' ⚠'}
                       </td>
                       <td className="table-cell text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => openEdit(j)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all"><Pencil size={15} /></button>
-                          <button onClick={() => setDeleteId(j._id)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"><Trash2 size={15} /></button>
+                          <button onClick={() => openEdit(j)} className="p-1.5 rounded-lg text-gray-500 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all" title="Edit Job"><Pencil size={15} /></button>
+                          {isAdmin && (
+                            <button onClick={() => setDeleteId(j._id)} className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all" title="Delete Job"><Trash2 size={15} /></button>
+                          )}
                         </div>
                       </td>
                     </tr>

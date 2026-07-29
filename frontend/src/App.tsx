@@ -50,15 +50,28 @@ import UnifiedChat from './components/UnifiedChat';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
-const ProtectedRoute = ({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) => {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+const ProtectedRoute = ({ children, adminOnly = false, assistantAllowed = false }: { children: React.ReactNode; adminOnly?: boolean; assistantAllowed?: boolean }) => {
+  const { isAuthenticated, isAdmin, isAssistant, loading } = useAuth();
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
       <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (adminOnly && !isAdmin) return <Navigate to="/dashboard" replace />;
+
+  const isStaff = isAdmin || isAssistant;
+
+  if (adminOnly) {
+    if (isAdmin) return <>{children}</>;
+    if (assistantAllowed && isAssistant) return <>{children}</>;
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Prevent staff from accessing student dashboard
+  if (!adminOnly && isStaff && window.location.pathname.startsWith('/dashboard')) {
+    return <Navigate to="/admin" replace />;
+  }
+
   return <>{children}</>;
 };
 
@@ -96,18 +109,20 @@ function AppRoutes() {
       <Route path="/dashboard/notifications" element={<ProtectedRoute><StudentNotifications /></ProtectedRoute>} />
       <Route path="/dashboard/profile" element={<ProtectedRoute><StudentProfile /></ProtectedRoute>} />
 
-      {/* Admin */}
-      <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
-      <Route path="/admin/profile" element={<ProtectedRoute adminOnly><AdminProfile /></ProtectedRoute>} />
-      <Route path="/admin/universities" element={<ProtectedRoute adminOnly><ManageUniversities /></ProtectedRoute>} />
+      {/* Admin & Assistant Shared Routes */}
+      <Route path="/admin" element={<ProtectedRoute adminOnly assistantAllowed><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/admin/profile" element={<ProtectedRoute adminOnly assistantAllowed><AdminProfile /></ProtectedRoute>} />
+      <Route path="/admin/assistance-requests" element={<ProtectedRoute adminOnly assistantAllowed><AssistanceRequests /></ProtectedRoute>} />
+      <Route path="/admin/student-records" element={<ProtectedRoute adminOnly assistantAllowed><StudentRecords /></ProtectedRoute>} />
+      <Route path="/admin/universities" element={<ProtectedRoute adminOnly assistantAllowed><ManageUniversities /></ProtectedRoute>} />
+      <Route path="/admin/jobs" element={<ProtectedRoute adminOnly assistantAllowed><ManageJobs /></ProtectedRoute>} />
+      <Route path="/admin/messages" element={<ProtectedRoute adminOnly assistantAllowed><ContactMessages /></ProtectedRoute>} />
+      <Route path="/admin/announcements" element={<ProtectedRoute adminOnly assistantAllowed><Announcements /></ProtectedRoute>} />
+
+      {/* Pure Admin Routes */}
       <Route path="/admin/programs" element={<ProtectedRoute adminOnly><ManagePrograms /></ProtectedRoute>} />
-      <Route path="/admin/jobs" element={<ProtectedRoute adminOnly><ManageJobs /></ProtectedRoute>} />
-      <Route path="/admin/assistance-requests" element={<ProtectedRoute adminOnly><AssistanceRequests /></ProtectedRoute>} />
-      <Route path="/admin/student-records" element={<ProtectedRoute adminOnly><StudentRecords /></ProtectedRoute>} />
       <Route path="/admin/users" element={<ProtectedRoute adminOnly><ManageUsers /></ProtectedRoute>} />
       <Route path="/admin/guidance" element={<ProtectedRoute adminOnly><GuidanceAdmin /></ProtectedRoute>} />
-      <Route path="/admin/messages" element={<ProtectedRoute adminOnly><ContactMessages /></ProtectedRoute>} />
-      <Route path="/admin/announcements" element={<ProtectedRoute adminOnly><Announcements /></ProtectedRoute>} />
       <Route path="/admin/hero-images" element={<ProtectedRoute adminOnly><HeroImages /></ProtectedRoute>} />
       <Route path="/admin/success-stories" element={<ProtectedRoute adminOnly><SuccessStories /></ProtectedRoute>} />
 

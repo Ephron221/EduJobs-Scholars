@@ -1,15 +1,17 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IStudentApplication extends Document {
-  studentId: mongoose.Types.ObjectId;
+  studentId?: mongoose.Types.ObjectId;
   studentName: string;
   studentEmail: string;
   studentPhone: string;
   opportunityId: mongoose.Types.ObjectId;
   opportunityType: 'university' | 'job';
   opportunityName: string;
-  status: 'Interested' | 'Applied' | 'Submitted' | 'Accepted' | 'Rejected';
+  status: 'Interested' | 'Applied' | 'Submitted' | 'Accepted' | 'Rejected' | 'In Progress' | 'Resolved';
   notes: string;
+  assignedAssistantId?: mongoose.Types.ObjectId;
+  resolutionProof?: string;
   appliedAt: Date;
   updatedAt: Date;
 }
@@ -24,10 +26,12 @@ const StudentApplicationSchema = new Schema<IStudentApplication>({
   opportunityName: { type: String, required: true },
   status: {
     type: String,
-    enum: ['Interested', 'Applied', 'Submitted', 'Accepted', 'Rejected'],
+    enum: ['Interested', 'Applied', 'Submitted', 'Accepted', 'Rejected', 'In Progress', 'Resolved'],
     default: 'Interested'
   },
   notes: { type: String, default: '' },
+  assignedAssistantId: { type: Schema.Types.ObjectId, ref: 'User', required: false },
+  resolutionProof: { type: String, default: '' },
 }, { timestamps: true });
 
 export default mongoose.model<IStudentApplication>('StudentApplication', StudentApplicationSchema);

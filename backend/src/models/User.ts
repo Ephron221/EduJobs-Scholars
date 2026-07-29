@@ -5,7 +5,7 @@ export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
-  role: 'student' | 'admin' | 'jobseeker';
+  role: 'student' | 'admin' | 'jobseeker' | 'assistant';
   savedOpportunities: { id: string; type: 'university' | 'job' }[];
   isActive: boolean;
   resetPasswordToken?: string;
@@ -29,7 +29,7 @@ const UserSchema = new Schema<IUser>({
   },
   googleId: { type: String, unique: true, sparse: true },
   avatar: String,
-  role: { type: String, enum: ['student', 'admin', 'jobseeker'], default: 'student' },
+  role: { type: String, enum: ['student', 'admin', 'jobseeker', 'assistant'], default: 'student' },
   savedOpportunities: [{
     id: { type: String },
     type: { type: String, enum: ['university', 'job'] }

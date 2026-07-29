@@ -52,6 +52,7 @@ export const applicationAPI = {
   create: (data: unknown) => api.post('/applications', data),
   createPublic: (data: unknown) => api.post('/applications/public', data),
   update: (id: string, data: unknown) => api.put(`/applications/${id}`, data),
+  resolve: (id: string, resolutionProof: string) => api.patch(`/applications/${id}/resolve`, { resolutionProof }),
   delete: (id: string) => api.delete(`/applications/${id}`),
 };
 
