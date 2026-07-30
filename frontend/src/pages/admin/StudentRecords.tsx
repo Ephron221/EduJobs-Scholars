@@ -9,6 +9,7 @@ import Loader from '../../components/Loader';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { getAssetUrl } from '../../utils/assetUrl';
+import clsx from 'clsx';
 
 interface StudentDocument {
   name: string;
@@ -414,22 +415,60 @@ export default function StudentRecords() {
         onChange={handleReplaceFile}
       />
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="glass-card p-4 flex items-center justify-between">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+        <div
+          onClick={() => { setFilterStatus(''); setPage(1); }}
+          className={clsx(
+            "glass-card p-4 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.02] active:scale-95",
+            filterStatus === '' && "ring-2 ring-cyan-500 border-transparent bg-cyan-500/5"
+          )}
+        >
           <div><p className="text-xs text-gray-500 dark:text-gray-400">Total</p><p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p></div>
           <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center"><Users className="text-cyan-500" size={20} /></div>
         </div>
-        <div className="glass-card p-4 flex items-center justify-between">
+
+        <div
+          onClick={() => { setFilterStatus(filterStatus === 'active' ? '' : 'active'); setPage(1); }}
+          className={clsx(
+            "glass-card p-4 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.02] active:scale-95",
+            filterStatus === 'active' && "ring-2 ring-green-500 border-transparent bg-green-500/5"
+          )}
+        >
           <div><p className="text-xs text-gray-500 dark:text-gray-400">Active</p><p className="text-2xl font-bold text-green-500">{stats.active}</p></div>
           <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center"><CheckCircle className="text-green-500" size={20} /></div>
         </div>
-        <div className="glass-card p-4 flex items-center justify-between">
+
+        <div
+          onClick={() => { setFilterStatus(filterStatus === 'pending' ? '' : 'pending'); setPage(1); }}
+          className={clsx(
+            "glass-card p-4 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.02] active:scale-95",
+            filterStatus === 'pending' && "ring-2 ring-yellow-500 border-transparent bg-yellow-500/5"
+          )}
+        >
           <div><p className="text-xs text-gray-500 dark:text-gray-400">Pending</p><p className="text-2xl font-bold text-yellow-500">{stats.pending}</p></div>
           <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center"><Activity className="text-yellow-500" size={20} /></div>
         </div>
-        <div className="glass-card p-4 flex items-center justify-between">
+
+        <div
+          onClick={() => { setFilterStatus(filterStatus === 'suspended' ? '' : 'suspended'); setPage(1); }}
+          className={clsx(
+            "glass-card p-4 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.02] active:scale-95",
+            filterStatus === 'suspended' && "ring-2 ring-red-500 border-transparent bg-red-500/5"
+          )}
+        >
           <div><p className="text-xs text-gray-500 dark:text-gray-400">Suspended</p><p className="text-2xl font-bold text-red-500">{stats.suspended}</p></div>
           <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center"><Ban className="text-red-500" size={20} /></div>
+        </div>
+
+        <div
+          onClick={() => { setFilterStatus(filterStatus === 'graduated' ? '' : 'graduated'); setPage(1); }}
+          className={clsx(
+            "glass-card p-4 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.02] active:scale-95",
+            filterStatus === 'graduated' && "ring-2 ring-purple-500 border-transparent bg-purple-500/5"
+          )}
+        >
+          <div><p className="text-xs text-gray-500 dark:text-gray-400">Graduated</p><p className="text-2xl font-bold text-purple-500">{stats.graduated}</p></div>
+          <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center"><GraduationCap className="text-purple-500" size={20} /></div>
         </div>
       </div>
 

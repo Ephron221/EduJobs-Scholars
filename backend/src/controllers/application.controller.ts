@@ -83,8 +83,12 @@ export const createPublicApplication = async (req: Request, res: Response): Prom
       status: 'In Progress',
     });
     res.status(201).json({ message: 'Application assistance request submitted successfully', application });
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to submit application assistance request', error });
+  } catch (error: any) {
+    console.error('Public Application Error:', error);
+    res.status(500).json({
+      message: 'Failed to submit application assistance request',
+      error: error.message || 'Internal server error'
+    });
   }
 };
 

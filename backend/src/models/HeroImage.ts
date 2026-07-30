@@ -15,7 +15,7 @@ export interface IHeroImage extends Document {
 const HeroImageSchema = new Schema<IHeroImage>({
   imageUrl: { type: String, required: true },
   altText: { type: String, required: true },
-  category: { type: String, enum: ['graduation', 'workers'], required: true },
+  category: { type: String, required: true },
   university: { type: String },
   country: { type: String },
   order: { type: Number, default: 0 },

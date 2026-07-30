@@ -1,0 +1,5 @@
+- `[x]` Modernize `AdminProfile.tsx` with tabs and animations
+- `[x]` Modernize `StudentProfile.tsx` with tabs and animations
+- `[x]` Implement real-time password strength and validation
+- `[x]` Refine avatar upload and preview UI
+- `[x]` Verify profile and password update flows

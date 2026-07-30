@@ -3,7 +3,7 @@ import {
   ClipboardList, Eye, Mail, Phone, Search, Trash2, 
   User as UserIcon, CheckCircle2, Clock, Send, ShieldCheck, 
   AlertCircle, LayoutGrid, CheckCircle, Hourglass, UserPlus,
-  Briefcase, GraduationCap, ArrowRight, Filter
+  Briefcase, GraduationCap, ArrowRight, Filter, Quote, XCircle, Activity, Star
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { applicationAPI, userAPI } from '../../api';
@@ -103,13 +103,18 @@ export default function AssistanceRequests() {
   // Statistics calculation
   const stats = useMemo(() => {
     const total = requests.length;
+    const interested = requests.filter(r => r.status === 'Interested').length;
+    const applied = requests.filter(r => r.status === 'Applied').length;
+    const submitted = requests.filter(r => r.status === 'Submitted').length;
     const inProgress = requests.filter(r => r.status === 'In Progress').length;
+    const accepted = requests.filter(r => r.status === 'Accepted').length;
+    const rejected = requests.filter(r => r.status === 'Rejected').length;
     const resolved = requests.filter(r => r.status === 'Resolved').length;
     const unassigned = requests.filter(r => !r.assignedAssistantId).length;
     const uniType = requests.filter(r => r.opportunityType === 'university').length;
     const jobType = requests.filter(r => r.opportunityType === 'job').length;
 
-    return { total, inProgress, resolved, unassigned, uniType, jobType };
+    return { total, interested, applied, submitted, inProgress, accepted, rejected, resolved, unassigned, uniType, jobType };
   }, [requests]);
 
   const updateStatus = async (id: string, nextStatus: string) => {
@@ -172,38 +177,81 @@ export default function AssistanceRequests() {
     <AdminLayout title={currentUser?.role === 'assistant' ? "My Assigned Tasks" : "Assistance Requests"}>
       
       {/* ══════ STATS SECTION ══════ */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-4 mb-8">
         <StatCard 
-          label="Total Requests" 
+          label="Total"
           value={stats.total} 
           icon={<ClipboardList size={20} />} 
           color="bg-cyan-500/10 text-cyan-500" 
           active={status === '' && type === ''}
           onClick={() => { setStatus(''); setType(''); }}
         />
+        <StatCard
+          label="Interested"
+          value={stats.interested}
+          icon={<Star size={20} />}
+          color="bg-slate-500/10 text-slate-500"
+          active={status === 'Interested'}
+          onClick={() => setStatus('Interested')}
+        />
+        <StatCard
+          label="Applied"
+          value={stats.applied}
+          icon={<Send size={20} />}
+          color="bg-blue-500/10 text-blue-500"
+          active={status === 'Applied'}
+          onClick={() => setStatus('Applied')}
+        />
+        <StatCard
+          label="Submitted"
+          value={stats.submitted}
+          icon={<ShieldCheck size={20} />}
+          color="bg-indigo-500/10 text-indigo-500"
+          active={status === 'Submitted'}
+          onClick={() => setStatus('Submitted')}
+        />
+        <StatCard
+          label="Accepted"
+          value={stats.accepted}
+          icon={<CheckCircle size={20} />}
+          color="bg-green-500/10 text-green-500"
+          active={status === 'Accepted'}
+          onClick={() => setStatus('Accepted')}
+        />
+        <StatCard
+          label="Rejected"
+          value={stats.rejected}
+          icon={<XCircle size={20} />}
+          color="bg-red-500/10 text-red-500"
+          active={status === 'Rejected'}
+          onClick={() => setStatus('Rejected')}
+        />
         <StatCard 
           label="In Progress" 
           value={stats.inProgress} 
-          icon={<Hourglass size={20} />} 
-          color="bg-yellow-500/10 text-yellow-500" 
+          icon={<Activity size={20} />}
+          color="bg-amber-500/10 text-amber-500"
           active={status === 'In Progress'}
           onClick={() => setStatus('In Progress')}
         />
         <StatCard 
           label="Resolved" 
           value={stats.resolved} 
-          icon={<CheckCircle size={20} />} 
+          icon={<CheckCircle2 size={20} />}
           color="bg-emerald-500/10 text-emerald-500" 
           active={status === 'Resolved'}
           onClick={() => setStatus('Resolved')}
         />
-        <StatCard 
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <StatCard
           label="Unassigned" 
           value={stats.unassigned} 
           icon={<UserPlus size={20} />} 
-          color="bg-red-500/10 text-red-500" 
-          active={status === 'Interested'} // Usually new ones are unassigned
-          onClick={() => setStatus('Interested')}
+          color="bg-orange-500/10 text-orange-500"
+          active={false}
+          onClick={() => {}} // Could add unassigned filter logic if needed
         />
         <StatCard 
           label="Universities" 
@@ -217,7 +265,7 @@ export default function AssistanceRequests() {
           label="Jobs" 
           value={stats.jobType} 
           icon={<Briefcase size={20} />} 
-          color="bg-blue-500/10 text-blue-500" 
+          color="bg-sky-500/10 text-sky-500"
           active={type === 'job'}
           onClick={() => setType('job')}
         />

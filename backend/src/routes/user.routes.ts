@@ -2,12 +2,13 @@ import { Router } from 'express';
 import {
   getUsers, getUserById, updateUser, deleteUser,
   toggleUserStatus, saveOpportunity, unsaveOpportunity, getSavedOpportunities,
-  getUserStats, updateUserRole
+  getUserStats, updateUserRole, getPublicAssistants
 } from '../controllers/user.controller';
 import { protect, adminOnly } from '../middleware/auth';
 
 const router = Router();
 
+router.get('/assistants', getPublicAssistants);
 router.get('/', protect, adminOnly, getUsers);
 router.get('/stats', protect, adminOnly, getUserStats);
 router.get('/saved', protect, getSavedOpportunities);

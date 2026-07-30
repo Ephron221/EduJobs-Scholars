@@ -32,7 +32,7 @@ const UserSchema = new Schema<IUser>({
   role: { type: String, enum: ['student', 'admin', 'jobseeker', 'assistant'], default: 'student' },
   savedOpportunities: [{
     id: { type: String },
-    type: { type: String, enum: ['university', 'job'] }
+    type: { type: String, enum: ['university', 'job', 'service'] }
   }],
   isActive: { type: Boolean, default: true },
   resetPasswordToken: String,

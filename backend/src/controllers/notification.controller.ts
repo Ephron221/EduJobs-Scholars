@@ -91,6 +91,61 @@ export const createAnnouncement = async (req: AuthRequest, res: Response): Promi
   }
 };
 
+export const getAdminNotifications = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { search, type, page = 1, limit = 20 } = req.query;
+    const query: Record<string, unknown> = {};
+
+    if (type) query.type = type;
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { message: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+    const [notifications, total] = await Promise.all([
+      Notification.find(query).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
+      Notification.countDocuments(query),
+    ]);
+
+    res.json({ notifications, total, page: Number(page), totalPages: Math.ceil(total / Number(limit)) });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to get admin notifications', error });
+  }
+};
+
+export const updateNotification = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { title, message, type } = req.body;
+    const notification = await Notification.findByIdAndUpdate(
+      req.params.id,
+      { title, message, type },
+      { new: true, runValidators: true }
+    );
+    if (!notification) { res.status(404).json({ message: 'Notification not found' }); return; }
+    res.json({ message: 'Notification updated successfully', notification });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update notification', error });
+  }
+};
+
+export const getNotificationStats = async (_req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const [total, announcement, new_opportunity, deadline, system] = await Promise.all([
+      Notification.countDocuments({ isGlobal: true }),
+      Notification.countDocuments({ type: 'announcement', isGlobal: true }),
+      Notification.countDocuments({ type: 'new_opportunity', isGlobal: true }),
+      Notification.countDocuments({ type: 'deadline', isGlobal: true }),
+      Notification.countDocuments({ type: 'system', isGlobal: true }),
+    ]);
+    res.json({ total, announcement, new_opportunity, deadline, system });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to get notification stats', error });
+  }
+};
+
 export const deleteNotification = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     await Notification.findByIdAndDelete(req.params.id);

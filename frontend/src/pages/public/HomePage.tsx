@@ -324,37 +324,6 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Floating Developer Card */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
-        {showDevCard && (
-          <div className="mb-3 w-72 animate-popup-in overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-950 shadow-2xl shadow-black/30">
-            <div className="h-1 w-full bg-gradient-to-r from-cyan-400 to-cyan-500" />
-            <div className="p-5">
-              <div className="mb-3 flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 text-white font-black text-sm shadow-md shadow-cyan-500/30">
-                  EP
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-cyan-500">Developer</p>
-                  <p className="font-black text-gray-900 dark:text-white text-sm">Ephron's Portfolio</p>
-                </div>
-                <button onClick={() => setShowDevCard(false)} className="ml-auto flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 text-gray-400 hover:bg-gray-200 dark:hover:bg-white/20 transition-all">
-                  <X size={12} />
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-4">Want to know more about the developer behind this platform? View full portfolio, projects, and contact info.</p>
-              <a href="https://ephron-protifolio.vercel.app/" target="_blank" rel="noreferrer"
-                className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 px-4 py-2.5 text-xs font-black text-black shadow-md shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:-translate-y-0.5 transition-all">
-                <ExternalLink size={13} /> View Portfolio
-              </a>
-            </div>
-          </div>
-        )}
-        <button onClick={() => setShowDevCard((v) => !v)} title="About the Developer"
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-cyan-400 text-black shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:scale-110 transition-all">
-          <Code2 size={20} />
-        </button>
-      </div>
 
       {/* HERO SECTION */}
       <section className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-gray-900 pt-24 text-white">

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { GraduationCap, Briefcase, Users, ClipboardList, BookOpen, TrendingUp, Activity, CheckCircle, XCircle } from 'lucide-react';
+import { GraduationCap, Briefcase, Users, ClipboardList, BookOpen, TrendingUp, Activity, CheckCircle, XCircle, Megaphone, MessageSquare, Star, ShieldCheck } from 'lucide-react';
 import { statsAPI } from '../../api';
 import AdminLayout from './AdminLayout';
 import StatusBadge from '../../components/StatusBadge';
 import Loader from '../../components/Loader';
+import GrowthChart from '../../components/Admin/GrowthChart';
 import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
 
@@ -32,17 +33,21 @@ export default function AdminDashboard() {
     { label: 'Universities', value: stats.totalUniversities || 0, icon: <GraduationCap size={22} />, color: 'bg-cyan-500/10 text-cyan-400', border: 'border-cyan-500/20' },
     { label: 'Programs', value: stats.totalPrograms || 0, icon: <BookOpen size={22} />, color: 'bg-blue-500/10 text-blue-400', border: 'border-blue-500/20' },
     { label: 'Job Listings', value: stats.totalJobs || 0, icon: <Briefcase size={22} />, color: 'bg-purple-500/10 text-purple-400', border: 'border-purple-500/20' },
-    { label: 'Registered Students', value: stats.totalUsers || 0, icon: <Users size={22} />, color: 'bg-green-500/10 text-green-400', border: 'border-green-500/20' },
-    { label: 'Total Applications', value: stats.totalApplications || 0, icon: <ClipboardList size={22} />, color: 'bg-orange-500/10 text-orange-400', border: 'border-orange-500/20' },
+    { label: 'Students', value: stats.totalUsers || 0, icon: <Users size={22} />, color: 'bg-green-500/10 text-green-400', border: 'border-green-500/20' },
+    { label: 'Applications', value: stats.totalApplications || 0, icon: <ClipboardList size={22} />, color: 'bg-orange-500/10 text-orange-400', border: 'border-orange-500/20' },
+    { label: 'Guidance Articles', value: stats.totalGuidance || 0, icon: <Star size={22} />, color: 'bg-yellow-500/10 text-yellow-400', border: 'border-yellow-500/20' },
+    { label: 'Announcements', value: stats.totalAnnouncements || 0, icon: <Megaphone size={22} />, color: 'bg-cyan-500/10 text-cyan-400', border: 'border-cyan-500/20' },
+    { label: 'Pending Inquiries', value: stats.totalInquiries || 0, icon: <MessageSquare size={22} />, color: 'bg-red-500/10 text-red-400', border: 'border-red-500/20' },
+    { label: 'Success Stories', value: stats.totalStories || 0, icon: <ShieldCheck size={22} />, color: 'bg-emerald-500/10 text-emerald-400', border: 'border-emerald-500/20' },
+    { label: 'In Progress', value: stats.pendingCount || 0, icon: <Activity size={22} />, color: 'bg-amber-500/10 text-amber-400', border: 'border-amber-500/20' },
     { label: 'Accepted', value: stats.acceptedCount || 0, icon: <CheckCircle size={22} />, color: 'bg-green-500/10 text-green-400', border: 'border-green-500/20' },
     { label: 'Rejected', value: stats.rejectedCount || 0, icon: <XCircle size={22} />, color: 'bg-red-500/10 text-red-400', border: 'border-red-500/20' },
-    { label: 'In Progress', value: stats.pendingCount || 0, icon: <Activity size={22} />, color: 'bg-yellow-500/10 text-yellow-400', border: 'border-yellow-500/20' },
   ];
 
   return (
     <AdminLayout title="Overview">
       {/* Stats grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
         {statCards.map((s) => (
           <div key={s.label} className={clsx('glass-card p-5 border', s.border)}>
             <div className={clsx('w-10 h-10 rounded-xl flex items-center justify-center mb-3', s.color)}>
@@ -52,6 +57,11 @@ export default function AdminDashboard() {
             <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{s.label}</div>
           </div>
         ))}
+      </div>
+
+      {/* Growth Chart */}
+      <div className="mb-8">
+        <GrowthChart data={(data as any)?.monthlyTrends || []} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -65,11 +75,13 @@ export default function AdminDashboard() {
               const total = stats.totalApplications || 1;
               const pct = Math.round((item.count / total) * 100);
               const barColors: Record<string, string> = {
-                Interested: 'bg-gray-500',
+                Interested: 'bg-slate-400',
                 Applied: 'bg-cyan-500',
                 Submitted: 'bg-blue-500',
+                'In Progress': 'bg-amber-500',
                 Accepted: 'bg-green-500',
                 Rejected: 'bg-red-500',
+                Resolved: 'bg-emerald-600',
               };
               return (
                 <div key={item.status}>

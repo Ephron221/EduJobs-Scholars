@@ -59,6 +59,7 @@ export const applicationAPI = {
 export const userAPI = {
   getAll: (params?: Record<string, unknown>) => api.get('/users', { params }),
   getStats: () => api.get('/users/stats'),
+  getAssistants: () => api.get('/users/assistants'),
   getById: (id: string) => api.get(`/users/${id}`),
   update: (id: string, data: unknown) => api.put(`/users/${id}`, data),
   delete: (id: string) => api.delete(`/users/${id}`),
@@ -71,15 +72,19 @@ export const userAPI = {
 
 export const notificationAPI = {
   getAll: () => api.get('/notifications'),
+  getAdminAll: (params?: Record<string, unknown>) => api.get('/notifications/admin', { params }),
+  getStats: () => api.get('/notifications/stats'),
   getUnreadCount: () => api.get('/notifications/unread-count'),
   markRead: (id: string) => api.put(`/notifications/${id}/read`),
   markAllRead: () => api.put('/notifications/mark-all-read'),
   createAnnouncement: (data: unknown) => api.post('/notifications/announcement', data),
+  update: (id: string, data: unknown) => api.put(`/notifications/${id}`, data),
   delete: (id: string) => api.delete(`/notifications/${id}`),
 };
 
 export const guidanceAPI = {
   getAll: (params?: Record<string, unknown>) => api.get('/guidance', { params }),
+  getStats: () => api.get('/guidance/stats'),
   getById: (id: string) => api.get(`/guidance/${id}`),
   create: (data: unknown) => api.post('/guidance', data),
   update: (id: string, data: unknown) => api.put(`/guidance/${id}`, data),
