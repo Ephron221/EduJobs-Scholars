@@ -207,7 +207,6 @@ const LoginPage = () => {
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
                   onError={() => toast.error('Google Sign-In failed')}
-                  useOneTap
                   theme="filled_black"
                   shape="pill"
                   logo_alignment="left"

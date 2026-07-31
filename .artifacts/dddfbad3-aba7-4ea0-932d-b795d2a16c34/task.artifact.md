@@ -1,4 +1,0 @@
-- `[x]` Backend: Enhance `sendEmail.ts` with timeouts and TLS robustness
-- `[x]` Backend: Improve error reporting in `auth.controller.ts` for SMTP failures
-- `[x]` Frontend: Ensure `ForgotPassword.tsx` displays detailed error messages
-- `[x]` Verification: Test email flow in production environment
