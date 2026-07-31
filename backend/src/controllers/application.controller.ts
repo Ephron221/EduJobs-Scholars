@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import StudentApplication from '../models/StudentApplication';
+import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 
 export const getApplications = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -42,7 +43,7 @@ export const getApplicationsByStudent = async (req: Request, res: Response): Pro
   try {
     const applications = await StudentApplication.find({
       $or: [{ studentId: req.params.studentId }, { studentEmail: req.params.studentId }]
-    }).sort({ updatedAt: -1 });
+    }).populate('assignedAssistantId', 'name email').sort({ updatedAt: -1 });
     res.json({ applications });
   } catch (error) {
     res.status(500).json({ message: 'Failed to get applications', error });
@@ -71,7 +72,12 @@ export const createApplication = async (req: Request, res: Response): Promise<vo
 export const createPublicApplication = async (req: Request, res: Response): Promise<void> => {
   try {
     const { studentName, studentEmail, studentPhone, opportunityId, opportunityType, opportunityName, notes, assignedAssistantId } = req.body;
+
+    // Auto-link to existing user account if email matches
+    const existingUser = await User.findOne({ email: studentEmail.toLowerCase() });
+
     const application = await StudentApplication.create({
+      studentId: existingUser ? (existingUser._id as any) : undefined,
       studentName,
       studentEmail,
       studentPhone,

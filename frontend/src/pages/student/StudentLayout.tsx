@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getAssetUrl } from '../../utils/assetUrl';
 import { useNotifications } from '../../contexts/NotificationContext';
 import ThemeToggle from '../../components/ThemeToggle';
+import { motion } from 'framer-motion';
 import clsx from 'clsx';
 
 const navItems = [
@@ -61,41 +62,52 @@ export default function StudentLayout({ children, title }: { children: ReactNode
 
         {/* User profile overview */}
         <div className="p-4 border-b border-gray-200 dark:border-white/5">
-          <Link to="/dashboard/profile" onClick={closeMobileMenu} className="block rounded-3xl bg-cyan-50/80 dark:bg-white/5 p-4 hover:bg-cyan-100 dark:hover:bg-white/10 transition-all duration-200">
+          <Link to="/dashboard/profile" onClick={closeMobileMenu} className="block rounded-3xl bg-slate-50/50 dark:bg-white/5 p-4 hover:bg-white dark:hover:bg-white/10 transition-all duration-300 group border border-transparent hover:border-cyan-500/20 shadow-sm hover:shadow-md">
             <div className="flex items-center gap-3">
-              {user?.avatar ? (
-                <img src={getAssetUrl(user.avatar)} alt={user.name} className="w-12 h-12 rounded-2xl object-cover border border-cyan-200" />
-              ) : (
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-black font-black text-lg">
-                  {user?.name?.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user?.name}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+              <div className="relative">
+                {user?.avatar ? (
+                  <img src={getAssetUrl(user.avatar)} alt={user.name} className="w-11 h-11 rounded-2xl object-cover border border-cyan-200 dark:border-cyan-500/30 group-hover:scale-105 transition-transform" />
+                ) : (
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-black font-black text-base group-hover:scale-105 transition-transform">
+                    {user?.name?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-white dark:border-gray-900 shadow-sm" />
               </div>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-cyan-600 bg-cyan-100 rounded-full px-2.5 py-1 dark:text-cyan-300 dark:bg-cyan-500/10">
-                {user?.role === 'jobseeker' ? 'Jobseeker' : 'Student'}
-              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-gray-900 dark:text-white truncate group-hover:text-cyan-500 transition-colors">{user?.name}</p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate opacity-80 uppercase tracking-tighter">{user?.role}</p>
+              </div>
             </div>
           </Link>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto custom-scrollbar">
           {navItems.map((item) => {
             const active = location.pathname === item.href;
             return (
               <Link key={item.href} to={item.href} onClick={closeMobileMenu}
-                className={active ? 'sidebar-item-active' : 'sidebar-item'}>
-                {item.icon}
-                {item.label}
+                className={clsx(
+                  'flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-300 relative group',
+                  active
+                    ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 shadow-[inset_0_0_20px_rgba(6,182,212,0.05)]'
+                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'
+                )}>
+                <div className={clsx(
+                  'transition-transform duration-300 group-hover:scale-110 group-active:scale-95',
+                  active ? 'text-cyan-500' : ''
+                )}>
+                  {item.icon}
+                </div>
+                <span className="flex-1">{item.label}</span>
                 {item.label === 'Notifications' && unreadCount > 0 && (
-                  <span className="ml-auto bg-red-500 text-gray-900 dark:text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                  <span className="bg-red-500 text-white text-[10px] min-w-[20px] h-5 rounded-full flex items-center justify-center font-black px-1 shadow-lg shadow-red-500/20 animate-pulse">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
+                )}
+                {active && (
+                  <motion.div layoutId="active-pill" className="absolute left-0 w-1 h-6 bg-cyan-500 rounded-r-full" />
                 )}
               </Link>
             );

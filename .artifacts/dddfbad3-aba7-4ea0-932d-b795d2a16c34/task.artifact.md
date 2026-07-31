@@ -1,6 +1,6 @@
-- `[ ]` Backend: Create `Service` model, controller, and routes
-- `[ ]` Backend: Register `serviceRoutes` and update `seed.ts`
-- `[ ]` Frontend: Update `api/index.ts` and `AdminLayout.tsx`
-- `[ ]` Frontend: Create `ManageServices.tsx` and register route in `App.tsx`
-- `[ ]` Frontend: Update `ServicesPage.tsx` to fetch services dynamically
-- `[ ]` Verification: Test CRUD operations and dynamic loading
+- `[x]` Backend: Update `createPublicApplication` to auto-link users by email in `application.controller.ts`
+- `[x]` Frontend: Auto-fill assistance form for authenticated users in `UniversityCard.tsx`
+- `[x]` Frontend: Auto-fill assistance form for authenticated users in `JobCard.tsx`
+- `[x]` Frontend: Auto-fill assistance form for authenticated users in `ServicesPage.tsx`
+- `[x]` Frontend: Best-in-class Responsive UI for `ApplicationTracker.tsx`
+- `[x]` Verification: Verify requests appear in student dashboard regardless of login state during submission

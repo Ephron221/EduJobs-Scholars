@@ -127,7 +127,7 @@ export default function UniversityCard({ university, programCount, isSaved, onSa
     if (helpStep === 'assistant') {
       const fetchAssistants = async () => {
         try {
-          const res = await userAPI.getAll({ role: 'assistant' });
+          const res = await userAPI.getAssistants();
           setAssistants(res.data.users);
         } catch {
           toast.error('Failed to load assistants');
