@@ -4,7 +4,7 @@ import {
   GraduationCap, Landmark, FileEdit, Compass,
   Palette, Code, ArrowRight, CheckCircle2,
   X, Send, CheckCircle, ChevronRight,
-  User as UserIcon, HelpCircle, Briefcase, Info, List
+  User as UserIcon, HelpCircle, Briefcase, Info, List, Mail
 } from 'lucide-react';
 import { userAPI, applicationAPI, serviceAPI } from '../../api';
 import toast from 'react-hot-toast';
