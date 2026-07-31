@@ -1,6 +1,4 @@
-- `[x]` Fix `JobCard.tsx` missing `useEffect` and `ChevronRight`
-- `[x]` Fix `ServicesPage.tsx` missing `useAuth`
-- `[x]` Fix `ApplicationTracker.tsx` missing `ArrowRight`
-- `[x]` Verify `SavedOpportunities.tsx` `format` import
-- `[x]` Backend: Normalize emails in `auth.controller.ts`
-- `[x]` Backend: Enhance `sendEmail.ts` with logging and error handling
+- `[x]` Backend: Enhance `sendEmail.ts` with timeouts and TLS robustness
+- `[x]` Backend: Improve error reporting in `auth.controller.ts` for SMTP failures
+- `[x]` Frontend: Ensure `ForgotPassword.tsx` displays detailed error messages
+- `[x]` Verification: Test email flow in production environment

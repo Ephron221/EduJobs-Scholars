@@ -260,9 +260,8 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
 
       console.error('Password reset email failed to send:', err);
       res.status(500).json({
-        message: isDevelopment
-          ? `Email could not be sent: ${err instanceof Error ? err.message : 'Unknown email error'}`
-          : 'Email could not be sent',
+        message: 'Email could not be sent',
+        error: err instanceof Error ? err.message : 'Unknown SMTP error'
       });
     }
   } catch (error) {
@@ -395,9 +394,8 @@ export const resendOTP = async (req: Request, res: Response): Promise<void> => {
 
       console.error('OTP email failed to send:', err);
       res.status(500).json({
-        message: isDevelopment
-          ? `Email could not be sent: ${err instanceof Error ? err.message : 'Unknown email error'}`
-          : 'Email could not be sent',
+        message: 'Email could not be sent',
+        error: err instanceof Error ? err.message : 'Unknown SMTP error'
       });
     }
   } catch (error) {

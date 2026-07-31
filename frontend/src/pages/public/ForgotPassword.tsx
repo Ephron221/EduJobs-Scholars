@@ -22,7 +22,9 @@ const ForgotPassword = () => {
       toast.success(res.data.message || 'Reset code sent to your email.');
       navigate(`/verify-otp?email=${encodeURIComponent(email)}&type=reset`);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to send reset code');
+      const serverError = err.response?.data?.error;
+      const serverMessage = err.response?.data?.message;
+      setError(serverError ? `${serverMessage}: ${serverError}` : (serverMessage || 'Failed to send reset code'));
     } finally {
       setLoading(false);
     }
