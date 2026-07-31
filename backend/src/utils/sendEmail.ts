@@ -33,8 +33,15 @@ const sendEmail = async (options: EmailOptions) => {
     html: options.html,
   };
 
-  await transporter.verify();
-  await transporter.sendMail(mailOptions);
+  try {
+    console.log(`Attempting to send email to ${options.email}...`);
+    await transporter.verify();
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`Email sent successfully to ${options.email}. Message ID: ${info.messageId}`);
+  } catch (error) {
+    console.error(`Error sending email to ${options.email}:`, error);
+    throw error;
+  }
 };
 
 export default sendEmail;

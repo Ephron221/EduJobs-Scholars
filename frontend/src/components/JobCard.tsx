@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Bookmark,
@@ -13,6 +13,7 @@ import {
   Send,
   UserRound,
   X,
+  ChevronRight,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '../contexts/AuthContext';

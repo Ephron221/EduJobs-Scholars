@@ -5,7 +5,7 @@ import {
   List, Search, Filter, Clock, Info, CheckCircle2,
   AlertCircle, ChevronRight, Compass, ArrowUpRight,
   X, User as UserIcon, MessageSquare, ShieldCheck, Mail,
-  ChevronLeft, FileCheck, Layers, Sparkles
+  ChevronLeft, FileCheck, Layers, Sparkles, ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { applicationAPI } from '../../api';

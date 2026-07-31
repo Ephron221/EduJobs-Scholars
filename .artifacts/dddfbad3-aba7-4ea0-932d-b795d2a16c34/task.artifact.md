@@ -1,6 +1,6 @@
-- `[x]` Backend: Update `createPublicApplication` to auto-link users by email in `application.controller.ts`
-- `[x]` Frontend: Auto-fill assistance form for authenticated users in `UniversityCard.tsx`
-- `[x]` Frontend: Auto-fill assistance form for authenticated users in `JobCard.tsx`
-- `[x]` Frontend: Auto-fill assistance form for authenticated users in `ServicesPage.tsx`
-- `[x]` Frontend: Best-in-class Responsive UI for `ApplicationTracker.tsx`
-- `[x]` Verification: Verify requests appear in student dashboard regardless of login state during submission
+- `[x]` Fix `JobCard.tsx` missing `useEffect` and `ChevronRight`
+- `[x]` Fix `ServicesPage.tsx` missing `useAuth`
+- `[x]` Fix `ApplicationTracker.tsx` missing `ArrowRight`
+- `[x]` Verify `SavedOpportunities.tsx` `format` import
+- `[x]` Backend: Normalize emails in `auth.controller.ts`
+- `[x]` Backend: Enhance `sendEmail.ts` with logging and error handling

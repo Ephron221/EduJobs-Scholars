@@ -198,13 +198,16 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
 export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email });
+    if (!email) {
+      res.status(400).json({ message: 'Email is required' });
+      return;
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
-      if (isDevelopment) {
-        res.status(404).json({ message: 'No account found with that email address.' });
-        return;
-      }
+      // In production, we don't want to reveal if an email is in use or not
       res.status(200).json({ message: 'If an account exists, a verification code has been sent.' });
       return;
     }
@@ -324,13 +327,15 @@ export const verifyAccount = async (req: Request, res: Response): Promise<void> 
 export const resendOTP = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, type } = req.body; // type: 'verification' or 'reset'
-    const user = await User.findOne({ email });
+    if (!email) {
+      res.status(400).json({ message: 'Email is required' });
+      return;
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
-      if (isDevelopment) {
-        res.status(404).json({ message: 'No account found with that email address.' });
-        return;
-      }
       res.json({ message: 'If an account exists, a new code has been sent.' });
       return;
     }

@@ -7,6 +7,7 @@ import {
   User as UserIcon, HelpCircle, Briefcase, Info, List, Mail
 } from 'lucide-react';
 import { userAPI, applicationAPI, serviceAPI } from '../../api';
+import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
