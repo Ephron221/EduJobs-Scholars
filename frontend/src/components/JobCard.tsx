@@ -38,6 +38,12 @@ interface Job {
   documents?: { name: string; url: string; uploadedAt: string }[];
 }
 
+interface Assistant {
+  _id: string;
+  name: string;
+  email: string;
+}
+
 interface Props {
   job: Job;
   isSaved?: boolean;
@@ -71,11 +77,14 @@ const InfoSection = ({ icon, title, children }: { icon: React.ReactNode; title: 
 );
 
 export default function JobCard({ job, isSaved, onSaveToggle }: Props) {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [helpStep, setHelpStep] = useState<'eligibility' | 'form'>('eligibility');
+  const [helpStep, setHelpStep] = useState<'eligibility' | 'assistant' | 'form'>('eligibility');
+  const [assistants, setAssistants] = useState<Assistant[]>([]);
+  const [selectedAssistant, setSelectedAssistant] = useState<Assistant | null>(null);
   const [assistanceForm, setAssistanceForm] = useState({ fullName: '', phone: '', email: '' });
+
   const isExpired = new Date(job.deadline) < new Date();
   const type = typeConfig[job.type] || typeConfig.job;
   const applicationUrl = getAssetUrl(job.documents?.[0]?.url) || job.link;
@@ -83,7 +92,28 @@ export default function JobCard({ job, isSaved, onSaveToggle }: Props) {
   const postedDate = job.postedAt ? format(new Date(job.postedAt), 'dd MMM yyyy') : 'Recently posted';
   const avatarText = initialsFrom(job.company || job.title) || 'OP';
 
+  useEffect(() => {
+    if (helpStep === 'assistant') {
+      const fetchAssistants = async () => {
+        try {
+          const res = await userAPI.getAssistants();
+          setAssistants(res.data.users);
+        } catch {
+          toast.error('Failed to load assistants');
+        }
+      };
+      fetchAssistants();
+    }
+  }, [helpStep]);
+
   const openHelpModal = () => {
+    if (isAuthenticated && user) {
+      setAssistanceForm({
+        fullName: user.name,
+        email: user.email,
+        phone: ''
+      });
+    }
     setHelpStep('eligibility');
     setShowHelpModal(true);
   };
@@ -91,10 +121,16 @@ export default function JobCard({ job, isSaved, onSaveToggle }: Props) {
   const closeHelpModal = () => {
     setShowHelpModal(false);
     setHelpStep('eligibility');
+    setSelectedAssistant(null);
   };
 
   const handleAssistanceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedAssistant) {
+      toast.error('Please select an assistant');
+      return;
+    }
+
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(assistanceForm.email.trim());
     const phoneOk = /^\+\d{7,15}$/.test(assistanceForm.phone.trim());
 
@@ -116,7 +152,8 @@ export default function JobCard({ job, isSaved, onSaveToggle }: Props) {
         opportunityId: job._id,
         opportunityType: 'job',
         opportunityName: job.title,
-        notes: `Assistance request for ${job.title} at ${job.company}`,
+        assignedAssistantId: selectedAssistant._id,
+        notes: `Assistance request for ${job.title} at ${job.company} assigned to ${selectedAssistant.name}`,
       });
       toast.success('Application assistance request submitted!');
       setAssistanceForm({ fullName: '', phone: '', email: '' });
@@ -261,13 +298,14 @@ export default function JobCard({ job, isSaved, onSaveToggle }: Props) {
           <div className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-white shadow-2xl shadow-black dark:bg-[#111214]">
             <div className="flex items-center justify-between border-b border-gray-200 px-6 py-5 dark:border-white/10">
               <h2 className="text-2xl font-black text-gray-900 dark:text-white">
-                {helpStep === 'eligibility' ? 'Eligibility Check' : 'Application Help'}
+                {helpStep === 'eligibility' ? 'Eligibility Check' :
+                 helpStep === 'assistant' ? 'Select Assistance' : 'Application Help'}
               </h2>
               <button
                 type="button"
                 onClick={closeHelpModal}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-white"
-                aria-label="Close eligibility dialog"
+                aria-label="Close dialog"
               >
                 <X size={22} />
               </button>
@@ -306,7 +344,7 @@ export default function JobCard({ job, isSaved, onSaveToggle }: Props) {
                 <div className="grid gap-3 border-t border-gray-200 bg-gray-50 px-6 py-5 dark:border-white/10 dark:bg-[#15171a] sm:grid-cols-3">
                   <button
                     type="button"
-                    onClick={() => setHelpStep('form')}
+                    onClick={() => setHelpStep('assistant')}
                     className="btn-primary inline-flex items-center justify-center gap-2"
                   >
                     <CheckCircle size={22} /> Proceed
@@ -330,18 +368,66 @@ export default function JobCard({ job, isSaved, onSaveToggle }: Props) {
                   </button>
                 </div>
               </>
+            ) : helpStep === 'assistant' ? (
+                <div className="space-y-6 overflow-y-auto px-6 py-7">
+                  <div className="text-center mb-6">
+                    <h3 className="text-2xl font-black text-gray-900 dark:text-white">Choose Your Assistant</h3>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Select an expert to help guide your application process.</p>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {assistants.length === 0 ? (
+                      <div className="col-span-2 py-8 text-center border-2 border-dashed border-gray-200 dark:border-white/10 rounded-2xl">
+                        <UserRound size={32} className="mx-auto text-gray-300 mb-2" />
+                        <p className="text-gray-500">No assistants available at the moment.</p>
+                      </div>
+                    ) : assistants.map((as) => (
+                      <button
+                        key={as._id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedAssistant(as);
+                          setHelpStep('form');
+                        }}
+                        className="flex items-center gap-4 p-4 rounded-2xl border-2 border-gray-100 dark:border-white/5 hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all text-left group"
+                      >
+                        <div className="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-500 font-bold">
+                          {as.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-gray-900 dark:text-white truncate">{as.name}</p>
+                          <p className="text-xs text-gray-500 truncate">{as.email}</p>
+                        </div>
+                        <ChevronRight size={18} className="text-gray-300 group-hover:text-cyan-500 group-hover:translate-x-1 transition-all" />
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setHelpStep('eligibility')}
+                    className="w-full mt-4 py-3 text-sm font-bold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors"
+                  >
+                    Back
+                  </button>
+                </div>
             ) : (
               <form onSubmit={handleAssistanceSubmit} className="space-y-6 overflow-y-auto px-6 py-7">
-                <div className="flex items-center gap-5">
-                  <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-cyan-500 text-3xl font-black text-black shadow-lg shadow-cyan-500/20">
-                    <UserRound size={38} />
+                <div className="mb-4 flex items-center gap-3 p-4 rounded-2xl bg-cyan-500/5 border border-cyan-500/10">
+                  <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-500 font-bold shrink-0">
+                    {selectedAssistant?.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black text-gray-900 dark:text-white">Application Assistance Form</h3>
-                    <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-400">
-                      Fill in your personal information so the team can contact you about this opportunity.
-                    </p>
+                    <p className="text-[10px] uppercase font-black tracking-widest text-cyan-600 dark:text-cyan-400">Assigned To</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">{selectedAssistant?.name}</p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setHelpStep('assistant')}
+                    className="ml-auto text-xs font-bold text-cyan-500 hover:underline"
+                  >
+                    Change
+                  </button>
                 </div>
                 <div className="grid gap-6 md:grid-cols-2">
                   <InfoSection icon={<UserRound size={15} />} title="Personal Information">
@@ -390,7 +476,7 @@ export default function JobCard({ job, isSaved, onSaveToggle }: Props) {
                   </div>
                 </InfoSection>
                 <div className="grid gap-3 border-t border-gray-200 pt-5 dark:border-white/10 sm:grid-cols-2">
-                  <button type="button" onClick={() => setHelpStep('eligibility')} className="btn-secondary justify-center">
+                  <button type="button" onClick={() => setHelpStep('assistant')} className="btn-secondary justify-center">
                     Back
                   </button>
                   <button type="submit" className="btn-primary inline-flex items-center justify-center gap-2">

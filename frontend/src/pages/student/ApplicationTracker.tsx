@@ -96,45 +96,66 @@ export default function ApplicationTracker() {
       <div className="max-w-[1600px] mx-auto space-y-6">
 
         {/* Global Toolbar */}
-        <div className="sticky top-20 z-40 flex flex-col md:flex-row gap-4 items-center justify-between bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl p-4 rounded-[2rem] border border-gray-100 dark:border-white/5 shadow-xl shadow-black/5">
-          <div className="flex flex-1 w-full gap-3">
-             <div className="relative flex-1 max-w-md group">
-                <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                <input
-                  type="text" value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search applications..."
-                  className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold focus:ring-2 ring-cyan-500/20 transition-all"
-                />
-             </div>
-             <div className="hidden lg:flex items-center gap-2 bg-gray-50 dark:bg-gray-900 px-4 py-2 rounded-2xl border border-gray-100 dark:border-white/5">
-                <Filter size={14} className="text-gray-400" />
-                <select
-                  value={filterType}
-                  onChange={(e) => setFilterType(e.target.value as any)}
-                  className="bg-transparent border-none text-xs font-black uppercase tracking-widest focus:ring-0 text-gray-600 dark:text-gray-400 outline-none cursor-pointer"
-                >
-                  <option value="all">All Items</option>
-                  <option value="university">Universities</option>
-                  <option value="job">Jobs</option>
-                  <option value="service">Services</option>
-                </select>
-             </div>
+        <div className="sticky top-20 z-40 space-y-4">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/80 dark:bg-[#15171a]/80 backdrop-blur-xl p-5 rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-2xl shadow-black/5">
+            <div className="flex flex-1 w-full gap-3">
+               <div className="relative flex-1 max-w-md group">
+                  <Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                  <input
+                    type="text" value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search your journey..."
+                    className="w-full bg-gray-100 dark:bg-gray-900 border-none rounded-[1.5rem] pl-14 pr-6 py-4 text-sm font-bold focus:ring-2 ring-cyan-500/20 transition-all outline-none"
+                  />
+               </div>
+               <div className="hidden lg:flex items-center gap-3 bg-gray-100 dark:bg-gray-900 px-5 py-2 rounded-[1.5rem] border border-gray-200 dark:border-white/5">
+                  <Filter size={16} className="text-gray-400" />
+                  <select
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value as any)}
+                    className="bg-transparent border-none text-[10px] font-black uppercase tracking-[0.2em] focus:ring-0 text-gray-600 dark:text-gray-400 outline-none cursor-pointer"
+                  >
+                    <option value="all">All Categories</option>
+                    <option value="university">Universities</option>
+                    <option value="job">Jobs & Careers</option>
+                    <option value="service">Edu Services</option>
+                  </select>
+               </div>
+            </div>
+
+            <div className="flex items-center gap-2 bg-gray-200/50 dark:bg-gray-900 p-1.5 rounded-[1.5rem] border border-gray-200 dark:border-white/5 self-stretch md:self-auto">
+              <button
+                onClick={() => setView('kanban')}
+                className={clsx('flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-3 rounded-2xl text-[11px] font-black transition-all uppercase tracking-[0.1em]', view === 'kanban' ? 'bg-white dark:bg-gray-800 text-cyan-500 shadow-xl scale-105' : 'text-gray-400 hover:text-gray-600 dark:hover:text-white')}
+              >
+                <LayoutGrid size={16} /> Board
+              </button>
+              <button
+                onClick={() => setView('table')}
+                className={clsx('flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-3 rounded-2xl text-[11px] font-black transition-all uppercase tracking-[0.1em]', view === 'table' ? 'bg-white dark:bg-gray-800 text-cyan-500 shadow-xl scale-105' : 'text-gray-400 hover:text-gray-600 dark:hover:text-white')}
+              >
+                <List size={16} /> List
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-900 p-1.5 rounded-2xl border border-gray-200 dark:border-white/5 self-stretch md:self-auto">
-            <button
-              onClick={() => setView('kanban')}
-              className={clsx('flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest', view === 'kanban' ? 'bg-white dark:bg-gray-800 text-cyan-500 shadow-lg' : 'text-gray-400 hover:text-gray-600 dark:hover:text-white')}
-            >
-              <LayoutGrid size={14} /> Board
-            </button>
-            <button
-              onClick={() => setView('table')}
-              className={clsx('flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest', view === 'table' ? 'bg-white dark:bg-gray-800 text-cyan-500 shadow-lg' : 'text-gray-400 hover:text-gray-600 dark:hover:text-white')}
-            >
-              <List size={14} /> List
-            </button>
+          {/* Quick Stats Summary */}
+          <div className="hidden lg:flex gap-4 overflow-x-auto no-scrollbar py-1">
+             {STATUSES.map(s => {
+               const count = byStatus(s).length;
+               if (count === 0) return null;
+               const config = statusConfig[s];
+               return (
+                 <motion.div
+                   key={s} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                   className={clsx("flex items-center gap-3 px-5 py-2.5 rounded-full border bg-white dark:bg-gray-900 shadow-sm transition-all hover:shadow-md cursor-default", config.border)}
+                 >
+                    <div className={clsx("w-2 h-2 rounded-full animate-pulse", config.color.replace('text-', 'bg-'))} />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{s}</span>
+                    <span className={clsx("text-xs font-black", config.color)}>{count}</span>
+                 </motion.div>
+               );
+             })}
           </div>
         </div>
 
@@ -417,15 +438,19 @@ export default function ApplicationTracker() {
                 <div className="p-8 rounded-[2.5rem] bg-white dark:bg-gray-900 border border-gray-100 dark:border-white/5 shadow-xl relative min-h-[400px] flex flex-col">
                   <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-cyan-500 mb-8 flex items-center gap-3">
                     <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_10px_#06b6d4]" />
-                    Official Feedback
+                    Expert Feedback
                   </h4>
 
                   <div className="flex-1 flex flex-col justify-between">
-                    <div className="relative p-6 rounded-3xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 group overflow-hidden">
-                      <Quote className="absolute -top-4 -left-4 text-cyan-500/10 group-hover:scale-125 transition-transform duration-700" size={80} />
+                    <div className="relative p-7 rounded-[2rem] bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 group overflow-hidden shadow-inner">
+                      <Quote className="absolute -top-4 -left-4 text-cyan-500/10 group-hover:scale-125 transition-transform duration-700" size={100} />
                       <div className="relative z-10">
-                        <p className="text-base text-gray-600 dark:text-gray-300 leading-relaxed italic font-medium">
-                          "{selectedApp.notes || 'Our team is currently reviewing your documentation and verifying eligibility requirements. Please check back for updates on your submission.'}"
+                        <p className="text-lg text-gray-700 dark:text-gray-200 leading-relaxed italic font-bold">
+                          {selectedApp.notes ? (
+                            `"${selectedApp.notes}"`
+                          ) : (
+                            <span className="text-gray-400 dark:text-gray-500 font-medium">Your dedicated assistant is currently processing your request. They will provide detailed guidance and updates right here.</span>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -437,23 +462,27 @@ export default function ApplicationTracker() {
                           animate={{ opacity: 1, y: 0 }}
                           className="mt-8 pt-8 border-t-2 border-dashed border-gray-100 dark:border-white/5"
                         >
-                          <div className="flex items-center gap-3 mb-6">
-                             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shadow-inner">
-                                <ShieldCheck size={20} />
+                          <div className="flex items-center gap-4 mb-6">
+                             <div className="p-3 rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
+                                <ShieldCheck size={24} />
                              </div>
-                             <h5 className="text-[11px] font-black uppercase text-emerald-500 tracking-[0.2em]">Final Resolution Evidence</h5>
+                             <div>
+                               <h5 className="text-[11px] font-black uppercase text-emerald-500 tracking-[0.2em]">Official Outcome</h5>
+                               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Final Resolution Provided</p>
+                             </div>
                           </div>
-                          <div className="bg-emerald-50 dark:bg-emerald-500/5 p-6 rounded-[1.8rem] border border-emerald-100 dark:border-emerald-500/20 shadow-inner">
-                             <p className="text-sm text-emerald-700 dark:text-emerald-400 font-bold leading-relaxed">{selectedApp.resolutionProof}</p>
+                          <div className="bg-emerald-50 dark:bg-emerald-500/5 p-7 rounded-[2rem] border border-emerald-100 dark:border-emerald-500/20 shadow-inner relative overflow-hidden">
+                             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16" />
+                             <p className="text-base text-emerald-800 dark:text-emerald-300 font-black leading-relaxed relative z-10">{selectedApp.resolutionProof}</p>
                           </div>
                         </motion.div>
                       )}
                     </AnimatePresence>
 
                     {!selectedApp.notes && selectedApp.status !== 'Resolved' && (
-                       <div className="mt-8 flex flex-col items-center justify-center p-8 bg-slate-50 dark:bg-white/5 rounded-3xl opacity-50 grayscale">
-                          <MessageSquare size={40} className="text-gray-300 dark:text-gray-700 mb-4" />
-                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Waiting for Notes</p>
+                       <div className="mt-8 flex flex-col items-center justify-center p-12 bg-slate-50 dark:bg-white/5 rounded-[2.5rem] opacity-40 grayscale group hover:opacity-60 transition-opacity">
+                          <MessageSquare size={48} className="text-gray-300 dark:text-gray-700 mb-4 group-hover:scale-110 transition-transform" />
+                          <p className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-400">Awaiting Feedback</p>
                        </div>
                     )}
                   </div>

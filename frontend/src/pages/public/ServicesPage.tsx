@@ -32,6 +32,7 @@ const ICON_MAP: Record<string, any> = {
 };
 
 export default function ServicesPage() {
+  const { user, isAuthenticated } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -70,6 +71,13 @@ export default function ServicesPage() {
   }, [helpStep]);
 
   const openHelpModal = (service: Service) => {
+    if (isAuthenticated && user) {
+      setAssistanceForm({
+        fullName: user.name,
+        email: user.email,
+        phone: ''
+      });
+    }
     setSelectedService(service);
     setHelpStep('eligibility');
     setShowHelpModal(true);
