@@ -33,6 +33,8 @@ type AssistanceRequest = {
   notes?: string;
   assignedAssistantId?: Assistant;
   resolutionProof?: string;
+  isDeletionRequested?: boolean;
+  deletionReason?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -73,16 +75,30 @@ export default function AssistanceRequests() {
   const [resolutionProof, setResolutionProof] = useState('');
   const [resolving, setResolving] = useState(false);
 
+  // Deletion Request State
+  const [showDeleteRequestModal, setShowDeleteRequestModal] = useState(false);
+  const [deletionReason, setDeletionReason] = useState('');
+  const [requestingDelete, setRequestingDelete] = useState(false);
+
   const fetchRequests = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await applicationAPI.getAll({
-        limit: 200, // Fetch more for better local filtering/stats
+      const params: any = {
+        limit: 200,
         search,
         status,
         opportunityType: type,
-      });
-      setRequests(res.data.applications);
+      };
+      if (status === 'Pending Deletion') {
+        params.status = undefined;
+        // We'll filter locally for now as the backend filter is simple
+      }
+      const res = await applicationAPI.getAll(params);
+      let apps = res.data.applications;
+      if (status === 'Pending Deletion') {
+        apps = apps.filter((a: any) => a.isDeletionRequested);
+      }
+      setRequests(apps);
     } catch {
       toast.error('Failed to load assistance requests');
     }
@@ -90,12 +106,11 @@ export default function AssistanceRequests() {
   }, [search, status, type]);
 
   const fetchAssistants = useCallback(async () => {
-    if (currentUser?.role !== 'admin') return;
     try {
-      const res = await userAPI.getAll({ role: 'assistant', limit: 100 });
+      const res = await userAPI.getAssistants();
       setAssistants(res.data.users);
     } catch { /* silent */ }
-  }, [currentUser]);
+  }, []);
 
   useEffect(() => { fetchRequests(); }, [fetchRequests]);
   useEffect(() => { fetchAssistants(); }, [fetchAssistants]);
@@ -111,10 +126,11 @@ export default function AssistanceRequests() {
     const rejected = requests.filter(r => r.status === 'Rejected').length;
     const resolved = requests.filter(r => r.status === 'Resolved').length;
     const unassigned = requests.filter(r => !r.assignedAssistantId).length;
+    const pendingDeletion = requests.filter(r => r.isDeletionRequested).length;
     const uniType = requests.filter(r => r.opportunityType === 'university').length;
     const jobType = requests.filter(r => r.opportunityType === 'job').length;
 
-    return { total, interested, applied, submitted, inProgress, accepted, rejected, resolved, unassigned, uniType, jobType };
+    return { total, interested, applied, submitted, inProgress, accepted, rejected, resolved, unassigned, uniType, jobType, pendingDeletion };
   }, [requests]);
 
   const updateStatus = async (id: string, nextStatus: string) => {
@@ -154,6 +170,34 @@ export default function AssistanceRequests() {
       toast.error('Failed to resolve request');
     }
     setResolving(false);
+  };
+
+  const handleRequestDeletion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!viewItem || !deletionReason.trim()) return;
+    setRequestingDelete(true);
+    try {
+      await applicationAPI.requestDeletion(viewItem._id, deletionReason.trim());
+      toast.success('Deletion request sent to admin');
+      setRequests((prev) => prev.map((item) => item._id === viewItem._id ? { ...item, isDeletionRequested: true, deletionReason } : item));
+      setShowDeleteRequestModal(false);
+      setDeletionReason('');
+      setViewItem(null);
+    } catch {
+      toast.error('Failed to send deletion request');
+    }
+    setRequestingDelete(false);
+  };
+
+  const handleAdminRejectDeletion = async (id: string) => {
+    try {
+      await applicationAPI.rejectDeletion(id);
+      toast.success('Deletion request rejected');
+      setRequests((prev) => prev.map((item) => item._id === id ? { ...item, isDeletionRequested: false, deletionReason: '' } : item));
+      if (viewItem?._id === id) setViewItem(null);
+    } catch {
+      toast.error('Failed to reject deletion');
+    }
   };
 
   const deleteRequest = async (id: string) => {
@@ -241,6 +285,14 @@ export default function AssistanceRequests() {
           color="bg-emerald-500/10 text-emerald-500" 
           active={status === 'Resolved'}
           onClick={() => setStatus('Resolved')}
+        />
+        <StatCard
+          label="Deletion Req."
+          value={stats.pendingDeletion}
+          icon={<AlertCircle size={20} />}
+          color="bg-rose-500/10 text-rose-500"
+          active={status === 'Pending Deletion'}
+          onClick={() => setStatus('Pending Deletion')}
         />
       </div>
 
@@ -387,6 +439,13 @@ export default function AssistanceRequests() {
                       </td>
                       <td className="table-cell">
                         <StatusBadge status={item.status} />
+                        {item.isDeletionRequested && (
+                          <div className="mt-1">
+                             <span className="text-[8px] font-black uppercase text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20 animate-pulse">
+                               Deletion Req
+                             </span>
+                          </div>
+                        )}
                       </td>
                       <td className="table-cell">
                         <div className="flex flex-col">
@@ -487,17 +546,23 @@ export default function AssistanceRequests() {
                   <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-500 mb-5 flex items-center gap-2">
                     <UserIcon size={12} /> Case Assignment
                   </h4>
-                  {currentUser?.role === 'admin' ? (
+                  {(currentUser?.role === 'admin' || viewItem.assignedAssistantId?._id === currentUser?._id) ? (
                     <div className="space-y-4">
                       <select 
                         value={viewItem.assignedAssistantId?._id || ''} 
                         onChange={(e) => assignAssistant(viewItem._id, e.target.value)}
                         className="select-field w-full text-xs font-black uppercase tracking-wider h-11"
                       >
-                        <option value="">Select Assistant to Assign</option>
-                        {assistants.map(as => <option key={as._id} value={as._id}>{as.name}</option>)}
+                        <option value="">{viewItem.assignedAssistantId ? 'Reassign to Colleague' : 'Select Assistant to Assign'}</option>
+                        {assistants.filter(as => as._id !== currentUser?._id).map(as => (
+                          <option key={as._id} value={as._id}>{as.name}</option>
+                        ))}
                       </select>
-                      <p className="text-[10px] text-amber-500/80 italic font-medium">Re-assigning will move this task to the new assistant's board.</p>
+                      <p className="text-[10px] text-amber-500/80 italic font-medium">
+                        {currentUser?.role === 'admin'
+                          ? "Re-assigning will move this task to the new assistant's board."
+                          : "Re-assigning will transfer this task from your board to your colleague."}
+                      </p>
                     </div>
                   ) : (
                     <div className="flex items-center gap-3 p-2 bg-cyan-500/5 rounded-2xl border border-cyan-500/10">
@@ -518,10 +583,20 @@ export default function AssistanceRequests() {
                   <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-500 mb-5 flex items-center gap-2">
                     <Quote size={12} /> Student Notes
                   </h4>
-                  <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-2xl min-h-[120px]">
+                    <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-2xl min-h-[120px] relative">
                     <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed italic">
                       "{viewItem.notes || 'No specific notes provided by the student'}"
                     </p>
+                    {viewItem.isDeletionRequested && (
+                      <div className="mt-4 pt-4 border-t border-red-500/20">
+                         <p className="text-[10px] font-black uppercase text-red-500 mb-2 flex items-center gap-1.5">
+                            <Trash2 size={12} /> Deletion Requested By Assistant
+                         </p>
+                         <p className="text-xs text-gray-600 dark:text-gray-400 font-bold bg-red-500/5 p-3 rounded-xl border border-red-500/10">
+                            Reason: {viewItem.deletionReason}
+                         </p>
+                      </div>
+                    )}
                   </div>
 
                   {viewItem.status === 'Resolved' && viewItem.resolutionProof && (
@@ -543,9 +618,9 @@ export default function AssistanceRequests() {
 
             <div className="flex flex-col sm:flex-row justify-between items-center pt-4 gap-4">
               <div className="flex items-center gap-4 w-full sm:w-auto">
-                {currentUser?.role === 'admin' && viewItem.status !== 'Resolved' && (
+                {(currentUser?.role === 'admin' || viewItem.assignedAssistantId?._id === currentUser?._id) && viewItem.status !== 'Resolved' && (
                   <div className="flex items-center gap-2 w-full">
-                    <span className="text-[10px] font-black uppercase text-gray-400 whitespace-nowrap">Admin Status:</span>
+                    <span className="text-[10px] font-black uppercase text-gray-400 whitespace-nowrap">Update Status:</span>
                     <select 
                       value={viewItem.status} 
                       onChange={(e) => updateStatus(viewItem._id, e.target.value)} 
@@ -556,12 +631,38 @@ export default function AssistanceRequests() {
                   </div>
                 )}
               </div>
-              <button 
-                onClick={() => setViewItem(null)} 
-                className="w-full sm:w-auto px-10 py-3 rounded-2xl bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white font-black text-xs hover:bg-gray-200 dark:hover:bg-white/10 transition-all border border-gray-200 dark:border-white/10"
-              >
-                Close View
-              </button>
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                 {currentUser?.role === 'assistant' && viewItem.assignedAssistantId?._id === currentUser?._id && !viewItem.isDeletionRequested && (
+                    <button
+                      onClick={() => setShowDeleteRequestModal(true)}
+                      className="flex-1 sm:flex-none px-6 py-3 rounded-2xl bg-red-500/10 text-red-500 font-black text-[10px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all border border-red-500/20"
+                    >
+                       Request Deletion
+                    </button>
+                 )}
+                 {currentUser?.role === 'admin' && viewItem.isDeletionRequested && (
+                    <div className="flex gap-2 w-full sm:w-auto">
+                       <button
+                         onClick={() => deleteRequest(viewItem._id)}
+                         className="flex-1 sm:flex-none px-6 py-3 rounded-2xl bg-red-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg shadow-red-500/20"
+                       >
+                          Approve Delete
+                       </button>
+                       <button
+                         onClick={() => handleAdminRejectDeletion(viewItem._id)}
+                         className="flex-1 sm:flex-none px-6 py-3 rounded-2xl bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 font-black text-[10px] uppercase tracking-widest hover:bg-gray-200 transition-all border border-gray-200"
+                       >
+                          Reject Req
+                       </button>
+                    </div>
+                 )}
+                 <button
+                   onClick={() => setViewItem(null)}
+                   className="flex-1 sm:flex-none px-10 py-3 rounded-2xl bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white font-black text-xs hover:bg-gray-200 dark:hover:bg-white/10 transition-all border border-gray-200 dark:border-white/10"
+                 >
+                   Close View
+                 </button>
+              </div>
             </div>
           </div>
         )}
@@ -605,6 +706,50 @@ export default function AssistanceRequests() {
                 <div className="w-5 h-5 border-3 border-black border-t-transparent rounded-full animate-spin" />
               ) : (
                 <><Send size={18} /> Finish Case</>
+              )}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ══════ DELETE REQUEST MODAL ══════ */}
+      <Modal
+        isOpen={showDeleteRequestModal}
+        onClose={() => setShowDeleteRequestModal(false)}
+        title="Request Task Deletion"
+        size="md"
+      >
+        <form onSubmit={handleRequestDeletion} className="space-y-6">
+          <div className="p-6 rounded-3xl bg-red-500/10 border-2 border-dashed border-red-500/30 text-center">
+            <Trash2 size={48} className="text-red-500 mx-auto mb-4" />
+            <h4 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">Request Removal</h4>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+              As an assistant, you cannot permanently delete records. Your request will be sent to the administrator for final approval.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-3">Reason for Deletion *</label>
+            <textarea
+              value={deletionReason}
+              onChange={(e) => setDeletionReason(e.target.value)}
+              className="input-field min-h-[120px] resize-none text-sm p-4 rounded-2xl"
+              placeholder="Example: Duplicate request from the same student, or invalid contact details provided."
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <button type="button" onClick={() => setShowDeleteRequestModal(false)} className="btn-secondary py-3.5 rounded-2xl font-bold">Cancel</button>
+            <button
+              type="submit"
+              disabled={requestingDelete || !deletionReason.trim()}
+              className="btn-danger py-3.5 rounded-2xl flex items-center justify-center gap-2 disabled:opacity-50 font-black shadow-lg shadow-red-500/20"
+            >
+              {requestingDelete ? (
+                <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <><Send size={18} /> Send Request</>
               )}
             </button>
           </div>

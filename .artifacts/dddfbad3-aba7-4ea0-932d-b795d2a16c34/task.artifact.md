@@ -1,5 +1,6 @@
-- `[x]` Modernize `AdminProfile.tsx` with tabs and animations
-- `[x]` Modernize `StudentProfile.tsx` with tabs and animations
-- `[x]` Implement real-time password strength and validation
-- `[x]` Refine avatar upload and preview UI
-- `[x]` Verify profile and password update flows
+- `[ ]` Backend: Create `Service` model, controller, and routes
+- `[ ]` Backend: Register `serviceRoutes` and update `seed.ts`
+- `[ ]` Frontend: Update `api/index.ts` and `AdminLayout.tsx`
+- `[ ]` Frontend: Create `ManageServices.tsx` and register route in `App.tsx`
+- `[ ]` Frontend: Update `ServicesPage.tsx` to fetch services dynamically
+- `[ ]` Verification: Test CRUD operations and dynamic loading

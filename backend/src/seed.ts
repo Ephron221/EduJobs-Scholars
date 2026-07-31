@@ -7,6 +7,7 @@ import Guidance from './models/Guidance';
 import User from './models/User';
 import HeroImage from './models/HeroImage';
 import SuccessStory from './models/SuccessStory';
+import Service from './models/Service';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ const seedData = async () => {
     await Guidance.deleteMany({});
     await HeroImage.deleteMany({});
     await SuccessStory.deleteMany({});
+    await Service.deleteMany({});
     await User.deleteMany({ email: 'esront21@gmail.com' });
 
     await User.create({
@@ -125,12 +127,12 @@ const seedData = async () => {
       }
     ]);
 
-    await SuccessStory.create([
+    await SuccessStory.insertMany([
       {
         type: 'student',
         fullName: 'Aline Uwase',
         profileImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600&q=80',
-        howTheyKnew: 'I found EduJobs Scholars while searching for scholarship guidance.',
+        howTheyKnow: 'I found EduJobs Scholars while searching for scholarship guidance.',
         howHelped: 'The platform helped me compare programs and prepare my application documents.',
         university: 'University of Rwanda',
         country: 'Rwanda',
@@ -141,7 +143,7 @@ const seedData = async () => {
         type: 'worker',
         fullName: 'Jean Niyonsenga',
         profileImage: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80',
-        howTheyKnew: 'A friend shared a job opportunity listed on EduJobs Scholars.',
+        howTheyKnow: 'A friend shared a job opportunity listed on EduJobs Scholars.',
         howHelped: 'I used the guidance resources to improve my CV and track applications.',
         jobTitle: 'Junior Web Developer',
         country: 'Rwanda',
@@ -151,7 +153,7 @@ const seedData = async () => {
     ]);
 
     // Seed Guidance
-    await Guidance.create([
+    await Guidance.insertMany([
       {
         title: 'University Application Process',
         category: 'university_applications',
@@ -163,6 +165,74 @@ const seedData = async () => {
         category: 'cv_writing',
         content: 'Your CV is your first impression. Make it count by...',
         tags: ['Choose a format', 'Highlight skills', 'Quantify results', 'Proofread carefully']
+      }
+    ]);
+
+    // Seed Services
+    await Service.insertMany([
+      {
+        title: "Application Support Services",
+        iconName: "GraduationCap",
+        features: [
+          "University and college applications (Rwanda and international)",
+          "Scholarship, Loan applications and self-sponsored",
+          "Mifotra applications and other government applications",
+        ],
+        order: 1
+      },
+      {
+        title: "Irembo Services Assistance",
+        iconName: "Landmark",
+        features: [
+          "Birth, marriage, and death certificates",
+          "Criminal record (police clearance)",
+          "Passport application guidance",
+          "Driving test registration",
+          "Other government e-services support"
+        ],
+        order: 2
+      },
+      {
+        title: "Document Services",
+        iconName: "FileEdit",
+        features: [
+          "Writing formal letters",
+          "CV preparation",
+          "Document editing & proofreading",
+          "Formatting documents for submission"
+        ],
+        order: 3
+      },
+      {
+        title: "Opportunities & Guidance",
+        iconName: "Compass",
+        features: [
+          "Job and scholarship updates",
+          "Guidance through WhatsApp community",
+          "Step-by-step application support"
+        ],
+        order: 4
+      },
+      {
+        title: "Design Services",
+        iconName: "Palette",
+        features: [
+          "Posters and flyers design",
+          "Event and announcement designs",
+          "Social media graphics",
+          "Best branding for businesses"
+        ],
+        order: 5
+      },
+      {
+        title: "Web & Mobile Development",
+        iconName: "Code",
+        features: [
+          "Websites for e-commerce, business and more",
+          "Mobile App development",
+          "Google Forms for data collection and correction"
+        ],
+        order: 6
       }
     ]);
 

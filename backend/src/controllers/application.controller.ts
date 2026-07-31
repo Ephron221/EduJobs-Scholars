@@ -92,15 +92,70 @@ export const createPublicApplication = async (req: Request, res: Response): Prom
   }
 };
 
-export const updateApplication = async (req: Request, res: Response): Promise<void> => {
+export const updateApplication = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const application = await StudentApplication.findByIdAndUpdate(
-      req.params.id, { ...req.body, updatedAt: new Date() }, { new: true, runValidators: true }
-    );
+    const application = await StudentApplication.findById(req.params.id);
     if (!application) { res.status(404).json({ message: 'Application not found' }); return; }
+
+    // Authorization: Admin or Assigned Assistant
+    const isOwner = application.assignedAssistantId?.toString() === req.user?._id.toString();
+    const isAdmin = req.user?.role === 'admin';
+
+    if (!isAdmin && !isOwner) {
+      res.status(403).json({ message: 'You are not authorized to update this task' });
+      return;
+    }
+
+    Object.assign(application, req.body);
+    application.updatedAt = new Date();
+    await application.save();
+
     res.json({ message: 'Application updated successfully', application });
   } catch (error) {
     res.status(500).json({ message: 'Failed to update application', error });
+  }
+};
+
+export const requestDeletion = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { reason } = req.body;
+    const application = await StudentApplication.findById(req.params.id);
+    if (!application) { res.status(404).json({ message: 'Application not found' }); return; }
+
+    // Only the assigned assistant can request deletion
+    if (application.assignedAssistantId?.toString() !== req.user?._id.toString()) {
+      res.status(403).json({ message: 'Only the assigned assistant can request deletion' });
+      return;
+    }
+
+    application.isDeletionRequested = true;
+    application.deletionReason = reason || 'No reason provided';
+    await application.save();
+
+    res.json({ message: 'Deletion request sent to admin', application });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to request deletion', error });
+  }
+};
+
+export const rejectDeletion = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const application = await StudentApplication.findById(req.params.id);
+    if (!application) { res.status(404).json({ message: 'Application not found' }); return; }
+
+    // Only admin can reject deletion requests
+    if (req.user?.role !== 'admin') {
+      res.status(403).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    application.isDeletionRequested = false;
+    application.deletionReason = '';
+    await application.save();
+
+    res.json({ message: 'Deletion request rejected', application });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to reject deletion request', error });
   }
 };
 

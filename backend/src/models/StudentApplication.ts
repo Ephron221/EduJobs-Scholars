@@ -12,6 +12,8 @@ export interface IStudentApplication extends Document {
   notes: string;
   assignedAssistantId?: mongoose.Types.ObjectId;
   resolutionProof?: string;
+  isDeletionRequested: boolean;
+  deletionReason: string;
   appliedAt: Date;
   updatedAt: Date;
 }
@@ -32,6 +34,8 @@ const StudentApplicationSchema = new Schema<IStudentApplication>({
   notes: { type: String, default: '' },
   assignedAssistantId: { type: Schema.Types.ObjectId, ref: 'User', required: false },
   resolutionProof: { type: String, default: '' },
+  isDeletionRequested: { type: Boolean, default: false },
+  deletionReason: { type: String, default: '' },
 }, { timestamps: true });
 
 export default mongoose.model<IStudentApplication>('StudentApplication', StudentApplicationSchema);

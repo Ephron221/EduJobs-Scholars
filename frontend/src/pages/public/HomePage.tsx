@@ -340,10 +340,10 @@ export default function HomePage() {
               <img
                 src={getAssetUrl(image.imageUrl)}
                 alt={image.altText || 'Hero Background'}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover brightness-[1.05]"
               />
-              <div className="absolute inset-0 bg-black/20" />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-gray-900/90" />
+              <div className="absolute inset-0 bg-black/10" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-gray-900/90" />
             </div>
           )) : (
             <div className="absolute inset-0 bg-gray-900" />
@@ -351,15 +351,15 @@ export default function HomePage() {
         </div>
 
         {/* Particle canvas background */}
-        <canvas ref={particlesRef} className="absolute inset-0 w-full h-full pointer-events-none opacity-40 z-1" />
+        <canvas ref={particlesRef} className="absolute inset-0 w-full h-full pointer-events-none opacity-30 z-1" />
 
-        <div className="absolute left-1/2 top-24 h-[580px] w-[580px] -translate-x-1/2 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none z-1" />
+        <div className="absolute left-1/2 top-24 h-[580px] w-[580px] -translate-x-1/2 rounded-full bg-cyan-500/5 blur-3xl pointer-events-none z-1" />
 
         <div className="relative z-10 page-container">
           <div className="grid min-h-[calc(100vh-120px)] items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="flex justify-center lg:justify-start">
               <div className="hero-service-orbit" aria-label="EduJobs Scholars services">
-                <div className="hero-service-center !bg-white shadow-2xl border border-white">
+                <div className="hero-service-center !bg-white/95 backdrop-blur-md shadow-[0_20px_50px_-12px_rgba(6,182,212,0.4)] border border-white">
                   <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-600">Welcome to</p>
                   <p className="mt-3 text-2xl font-black leading-tight text-gray-900">EduJobs Scholars</p>
                   <p className="mt-4 text-sm font-semibold leading-relaxed text-gray-500">
@@ -369,7 +369,7 @@ export default function HomePage() {
                 <div className="hero-service-path">
                   {heroServices.map((service) => (
                     <div key={service.label} className={`hero-service-node ${service.className}`}>
-                      <div className="hero-service-node-inner !bg-white shadow-lg border border-gray-100">
+                      <div className="hero-service-node-inner !bg-white/95 backdrop-blur-sm shadow-[0_10px_30px_-5px_rgba(6,182,212,0.3)] border border-gray-100">
                         <div className="text-cyan-600">{service.icon}</div>
                         <span className="text-gray-900 font-bold">{service.label}</span>
                       </div>
@@ -379,15 +379,16 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="pb-20 pt-4 text-center lg:text-left">
-              <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/20 px-4 py-2 text-sm font-medium text-cyan-300 backdrop-blur-md animate-fade-in">
-                <Star size={14} className="text-cyan-400" />
+            <div className="pb-20 pt-4 text-center lg:text-left relative">
+              <div className="absolute inset-0 -z-10 bg-black/20 backdrop-blur-[2px] rounded-[3rem] -m-10 hidden lg:block" />
+              <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-cyan-500/40 bg-cyan-500/20 px-4 py-2 text-sm font-bold text-cyan-200 backdrop-blur-md animate-fade-in shadow-lg">
+                <Star size={14} className="text-cyan-400 fill-cyan-400" />
                 Connecting Rwanda's best students to global opportunities
               </div>
 
               <TypewriterHeadline />
 
-              <p className="mx-auto mt-8 max-w-2xl text-lg leading-9 text-gray-100 md:text-xl lg:mx-0 animate-slide-up animation-delay-200 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+              <p className="mx-auto mt-8 max-w-2xl text-lg leading-9 text-gray-50 md:text-xl lg:mx-0 animate-slide-up animation-delay-200 drop-shadow-[0_2px_4px_rgba(0,0,0,1)] font-medium">
                 Discover universities, scholarships, career opportunities, and practical guidance designed to help school graduates choose a path, prepare well, and move forward with confidence.
               </p>
 

@@ -23,6 +23,7 @@ import heroImageRoutes from './routes/heroImage.routes';
 import successStoryRoutes from './routes/successStory.routes';
 import aiRoutes from './routes/ai.routes';
 import whatsappRoutes from './routes/whatsapp.routes';
+import serviceRoutes from './routes/service.routes';
 
 dotenv.config();
 
@@ -102,6 +103,7 @@ app.use('/api/hero-images', heroImageRoutes);
 app.use('/api/success-stories', successStoryRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/services', serviceRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

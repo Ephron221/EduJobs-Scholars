@@ -38,6 +38,7 @@ import AssistanceRequests from './pages/admin/AssistanceRequests';
 import ManageUsers from './pages/admin/ManageUsers';
 import GuidanceAdmin from './pages/admin/GuidanceAdmin';
 import Announcements from './pages/admin/Announcements';
+import ManageServices from './pages/admin/ManageServices';
 import ContactMessages from './pages/admin/ContactMessages';
 import AdminProfile from './pages/admin/AdminProfile';
 import HeroImages from './pages/admin/HeroImages';
@@ -120,6 +121,7 @@ function AppRoutes() {
       <Route path="/admin/announcements" element={<ProtectedRoute adminOnly assistantAllowed><Announcements /></ProtectedRoute>} />
 
       {/* Pure Admin Routes */}
+      <Route path="/admin/services" element={<ProtectedRoute adminOnly><ManageServices /></ProtectedRoute>} />
       <Route path="/admin/programs" element={<ProtectedRoute adminOnly><ManagePrograms /></ProtectedRoute>} />
       <Route path="/admin/users" element={<ProtectedRoute adminOnly><ManageUsers /></ProtectedRoute>} />
       <Route path="/admin/guidance" element={<ProtectedRoute adminOnly><GuidanceAdmin /></ProtectedRoute>} />

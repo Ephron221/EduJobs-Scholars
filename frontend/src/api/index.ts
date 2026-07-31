@@ -53,6 +53,8 @@ export const applicationAPI = {
   createPublic: (data: unknown) => api.post('/applications/public', data),
   update: (id: string, data: unknown) => api.put(`/applications/${id}`, data),
   resolve: (id: string, resolutionProof: string) => api.patch(`/applications/${id}/resolve`, { resolutionProof }),
+  requestDeletion: (id: string, reason: string) => api.patch(`/applications/${id}/request-deletion`, { reason }),
+  rejectDeletion: (id: string) => api.patch(`/applications/${id}/reject-deletion`),
   delete: (id: string) => api.delete(`/applications/${id}`),
 };
 
@@ -117,6 +119,13 @@ export const contactAPI = {
   getAll: (params?: Record<string, unknown>) => api.get('/contact', { params }),
   updateStatus: (id: string, status: string) => api.patch(`/contact/${id}`, { status }),
   delete: (id: string) => api.delete(`/contact/${id}`),
+};
+
+export const serviceAPI = {
+  getAll: () => api.get('/services'),
+  create: (data: unknown) => api.post('/services', data),
+  update: (id: string, data: unknown) => api.put(`/services/${id}`, data),
+  delete: (id: string) => api.delete(`/services/${id}`),
 };
 
 export const heroImageAPI = {

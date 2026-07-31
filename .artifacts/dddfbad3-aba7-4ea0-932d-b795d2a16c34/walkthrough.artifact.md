@@ -1,57 +1,26 @@
-# Walkthrough - Modern & Interactive User Profiles
+# Walkthrough - Crystal Clear Hero Section
 
-I have completely overhauled the User Profile pages for both **Administrators** and **Students**. The new interface is faster, more secure, and follows modern design patterns with fluid animations.
+I have optimized the hero section to make the background images more visible while significantly improving the readability of the text overlay.
 
-## Key Enhancements
+## Changes Made
 
-### 1. Tabbed Navigation & Fluid Motion
-- **Contextual Tabs**: Replaced the long scrolling page with organized tabs: **My Identity**, **Security**, and **Account Stats**.
-- **Smooth Transitions**: Content slides and fades seamlessly when switching tabs, powered by `framer-motion`.
-- **Entrance Effects**: The entire profile dashboard glides into view with a subtle spring animation.
+### 1. Enhanced Image Visibility
+- **Brightness Boost**: Applied a subtle `brightness-[1.05]` to the hero images so the original details stand out more.
+- **Overlay Reduction**: Lightened the global background tint from `20%` to `10%`, allowing the natural colors of the images to show through.
+- **Surgical Gradients**: Re-tuned the top-to-bottom shadow to be slightly more transparent in the center while maintaining enough contrast for the navigation bar.
 
-### 2. Enhanced Security (Password Update)
-- **Security Lockdown Tab**: A dedicated space for managing your access credentials.
-- **Real-time Strength Meter**: As you type a new password, a visual bar indicates its strength (Weak → Strong) based on length and character variety.
-- **Mismatch Protection**: Visual alerts and button disabling ensure you never accidentally set a password you haven't confirmed correctly.
-- **Clean Toggles**: Integrated a modern eye icon to peek/hide your passwords during entry.
+### 2. Modern Readability Enhancements
+- **Backdrop Blur**: Added a very subtle `backdrop-blur` and `20% black` surface behind the main heading and description. This acts like a digital lens that sharpens the text regardless of what image is behind it.
+- **Stronger Text Shadows**: Increased the depth of text shadows on the description so it remains crisp against light or busy background patterns.
 
-### 3. Modern Identity & Avatar Management
-- **Interactive Avatar**: Redesigned the profile photo section with a professional hover overlay. You can now see a "Camera" icon to quickly update your photo.
-- **Upload Feedback**: An instant green checkmark appears once you select a new file, ensuring you know it's ready to be saved.
-- **Polished Glassmorphism**: Cards feature soft shadows, backdrop blurs, and themed gradients that match the rest of the system.
-
-### 4. Specialized Student Insights
-- **Activity Dashboard**: A new "Stats" tab for students that visualizes their saved opportunities and active applications using vibrant, interactive cards.
-
-## Visual Summary
-
-````carousel
-```markdown
-### Profile Identity
-- Clean, focused inputs.
-- Large, professional headers.
-- Real-time save feedback.
-```
-<!-- slide -->
-```markdown
-### Security Center
-- Real-time strength meter.
-- Password mismatch detection.
-- Administrative security notes.
-```
-<!-- slide -->
-```markdown
-### Account Insights
-- Icon-rich statistics cards.
-- Quick links to trackers.
-- Hover-active depth effects.
-```
-````
+### 3. Polished Orbit UI
+- **Glow Effects**: Added a stronger `cyan` glow/shadow to the central "Welcome" circle and orbit nodes. This ensures they pop out from the clearer background.
+- **Glassmorphism**: Updated the orbit elements to use `95% white` with backdrop blurs, giving them a more modern "floating" feel.
 
 ## Verification Results
-- [x] **Functionality**: Verified that name and email updates sync correctly with the database.
-- [x] **Security**: Confirmed that the `changePassword` API is called correctly and handles validation errors.
-- [x] **UI/UX**: Tested tab switching and animations on both desktop and mobile resolutions.
+- [x] **Clarity**: Background images are noticeably sharper and brighter.
+- [x] **Readability**: Text is highly legible even when switching between different images in the slideshow.
+- [x] **Responsive**: The new blur wrappers adjust correctly for different screen sizes.
 
-> [!IMPORTANT]
-> When you update your password, your current session remains active, but you should log in again on other devices to ensure full synchronization.
+> [!TIP]
+> The text area now uses a "smart blur" that makes your "Your Future Starts Here" headline look stunning even over very bright or detailed photos!

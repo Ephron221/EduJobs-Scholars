@@ -2,7 +2,7 @@ import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, GraduationCap, BookOpen, Briefcase, Users, User,
-  ClipboardList, Bell, FileText, LogOut, ChevronRight, Shield, Home, MessageSquare, Menu, X, LifeBuoy
+  ClipboardList, Bell, FileText, LogOut, ChevronRight, Shield, Home, MessageSquare, Menu, X, LifeBuoy, List
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAssetUrl } from '../../utils/assetUrl';
@@ -20,6 +20,7 @@ const navItems = [
   { href: '/admin/guidance', label: 'Guidance', icon: <FileText size={17} />, roles: ['admin'] },
   { href: '/admin/messages', label: 'Inquiries', icon: <MessageSquare size={17} />, roles: ['admin', 'assistant'] },
   { href: '/admin/announcements', label: 'Announcements', icon: <Bell size={17} />, roles: ['admin', 'assistant'] },
+  { href: '/admin/services', label: 'Manage Services', icon: <List size={17} />, roles: ['admin'] },
   { href: '/admin/hero-images', label: 'Hero Images', icon: <Home size={17} />, roles: ['admin'] },
   { href: '/admin/success-stories', label: 'Success Stories', icon: <User size={17} />, roles: ['admin'] },
 ];
