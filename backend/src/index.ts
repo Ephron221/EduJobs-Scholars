@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import multer from 'multer';
 import dotenv from 'dotenv';
 import path from 'path';
+import mongoose from 'mongoose';
 import { connectDB } from './config/database';
 
 // Routes
@@ -30,10 +31,24 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5002;
 
-// Connect to MongoDB
-connectDB();
+// Database Connection Middleware for Vercel Serverless
+const ensureDbConnected = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  try {
+    // Skip DB check for health route
+    if (req.path === '/api/health') return next();
 
-// Simple request logger for debugging API routing issues
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error('DATABASE MIDDLEWARE ERROR:', error);
+    res.status(503).json({
+      message: 'Database connection failed. Please try again in a moment.',
+      error: process.env.NODE_ENV === 'development' ? error : 'Service Unavailable'
+    });
+  }
+};
+
+// Simple request logger
 app.use((req, _res, next) => {
   try {
     console.log('HTTP', req.method, req.originalUrl, 'Auth:', !!req.headers.authorization);
@@ -45,6 +60,7 @@ app.use((req, _res, next) => {
 
 // Middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
@@ -68,7 +84,10 @@ app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Multer error handler for file upload validation
+// Apply DB connection check to all API routes
+app.use('/api', ensureDbConnected);
+
+// Multer error handler
 app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (err instanceof multer.MulterError) {
     const message = err.code === 'LIMIT_FILE_SIZE'
@@ -84,7 +103,7 @@ app.use((err: unknown, _req: express.Request, res: express.Response, next: expre
   next(err);
 });
 
-// Serve uploaded files statically
+// Serve uploaded files
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // API Routes
@@ -107,7 +126,16 @@ app.use('/api/services', serviceRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'OK', message: 'EduJobs Scholars API running', timestamp: new Date() });
+  const dbStatus = {
+    connected: mongoose.connection.readyState === 1,
+    state: mongoose.connection.readyState, // 0: disconnected, 1: connected, 2: connecting, 3: disconnecting
+  };
+  res.json({
+    status: dbStatus.connected ? 'OK' : 'DEGRADED',
+    message: 'EduJobs Scholars API running',
+    database: dbStatus,
+    timestamp: new Date()
+  });
 });
 
 // 404 handler
@@ -117,11 +145,15 @@ app.use((_req, res) => {
 
 // Global error handler
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Internal server error', error: process.env.NODE_ENV === 'development' ? err.message : undefined });
+  console.error('GLOBAL ERROR:', err);
+  res.status(500).json({
+    message: 'Internal server error',
+    error: err.message, // Return error message temporarily to debug production
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
 });
 
-// Only listen when running locally — Vercel serverless handles this automatically
+// Only listen when running locally
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
     console.log(`\n🚀 EduJobs Scholars API running on port ${PORT}`);
