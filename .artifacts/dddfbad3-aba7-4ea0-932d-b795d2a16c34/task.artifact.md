@@ -1,0 +1,4 @@
+- `[ ]` Backend: Update `notification.routes.ts` to use `staffOnly` for CRUD operations
+- `[ ]` Backend: Verify other routes (Jobs, Universities, etc.) for Assistant permissions
+- `[ ]` Frontend: Verify `Announcements.tsx` UI consistency for Assistants
+- `[ ]` Verification: Test full CRUD flow as an Assistant
