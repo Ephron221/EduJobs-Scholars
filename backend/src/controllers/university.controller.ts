@@ -3,6 +3,7 @@ import path from 'path';
 import University from '../models/University';
 import Program from '../models/Program';
 import { AuthRequest } from '../middleware/auth';
+import { createSystemNotification } from '../utils/notify';
 import { deleteUploadedFile } from '../utils/uploadPath';
 import { getFileUrl } from '../utils/fileHelper';
 
@@ -45,6 +46,19 @@ export const getUniversityById = async (req: Request, res: Response): Promise<vo
 export const createUniversity = async (req: Request, res: Response): Promise<void> => {
   try {
     const university = await University.create(req.body);
+
+    try {
+      await createSystemNotification({
+        title: `New University Added: ${university.name}`,
+        message: `Explore programs and scholarships available at ${university.name} (${university.country}).`,
+        type: 'new_opportunity',
+        targetRole: 'all',
+        link: `/universities/${university._id}`,
+      });
+    } catch {
+      // ignore
+    }
+
     res.status(201).json({ message: 'University created successfully', university });
   } catch (error) {
     res.status(500).json({ message: 'Failed to create university', error });

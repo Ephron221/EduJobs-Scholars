@@ -15,6 +15,7 @@ export interface IUser extends Document {
   verificationExpire?: Date;
   googleId?: string;
   avatar?: string;
+  lastActive?: Date;
   createdAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
@@ -40,6 +41,7 @@ const UserSchema = new Schema<IUser>({
   isVerified: { type: Boolean, default: false },
   verificationCode: String,
   verificationExpire: Date,
+  lastActive: { type: Date, default: null },
 }, { timestamps: true });
 
 UserSchema.pre('save', async function () {

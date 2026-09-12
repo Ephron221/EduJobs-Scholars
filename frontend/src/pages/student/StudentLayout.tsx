@@ -2,11 +2,12 @@ import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Bookmark, ClipboardList, Bell, User,
-  BookOpen, LogOut, GraduationCap, ChevronRight, Shield, Menu, X, Briefcase
+  BookOpen, LogOut, GraduationCap, ChevronRight, Shield, Menu, X, Briefcase, MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAssetUrl } from '../../utils/assetUrl';
 import { useNotifications } from '../../contexts/NotificationContext';
+import NotificationDropdown from '../../components/NotificationDropdown';
 import ThemeToggle from '../../components/ThemeToggle';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
@@ -16,6 +17,7 @@ const navItems = [
   { href: '/dashboard/saved', label: 'Saved', icon: <Bookmark size={18} /> },
   { href: '/dashboard/applications', label: 'Applications', icon: <ClipboardList size={18} /> },
   { href: '/dashboard/notifications', label: 'Notifications', icon: <Bell size={18} /> },
+  { href: '/dashboard/messages', label: 'Messages', icon: <MessageSquare size={18} /> },
   { href: '/dashboard/profile', label: 'Profile', icon: <User size={18} /> },
 ];
 
@@ -26,6 +28,7 @@ export default function StudentLayout({ children, title }: { children: ReactNode
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
@@ -152,6 +155,24 @@ export default function StudentLayout({ children, title }: { children: ReactNode
           <div className="flex items-center gap-3">
             <Link to="/" className="text-xs text-gray-500 dark:text-gray-400 hover:text-cyan-400 transition-colors hidden sm:block">← Public Site</Link>
             <ThemeToggle />
+
+            {/* Notifications Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => { setNotifOpen(!notifOpen); setUserMenuOpen(false); }}
+                className="relative p-2.5 text-gray-600 dark:text-gray-300 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                title="Notifications"
+                aria-label="View notifications"
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold animate-pulse">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              {notifOpen && <NotificationDropdown onClose={() => setNotifOpen(false)} />}
+            </div>
 
             <div className="relative">
               <button

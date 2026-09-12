@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import path from 'path';
 import Job from '../models/Job';
 import { AuthRequest } from '../middleware/auth';
+import { createSystemNotification } from '../utils/notify';
 import { deleteUploadedFile } from '../utils/uploadPath';
 import { getFileUrl } from '../utils/fileHelper';
 
@@ -38,6 +39,19 @@ export const getJobById = async (req: Request, res: Response): Promise<void> => 
 export const createJob = async (req: Request, res: Response): Promise<void> => {
   try {
     const job = await Job.create(req.body);
+
+    try {
+      await createSystemNotification({
+        title: `New Job Opportunity: ${job.title}`,
+        message: `${job.company || 'Company'} is hiring for ${job.title}. Location: ${job.location || 'Remote'}.`,
+        type: 'new_opportunity',
+        targetRole: 'all',
+        link: '/jobs',
+      });
+    } catch {
+      // ignore
+    }
+
     res.status(201).json({ message: 'Job posted successfully', job });
   } catch (error) {
     res.status(500).json({ message: 'Failed to create job', error });

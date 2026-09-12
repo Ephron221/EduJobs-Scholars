@@ -6,6 +6,8 @@ export interface INotification extends Document {
   title: string;
   message: string;
   type: 'deadline' | 'new_opportunity' | 'status_update' | 'announcement' | 'system';
+  link?: string;
+  targetRole?: 'admin' | 'assistant' | 'student' | 'all';
   isRead: boolean;
   readBy: mongoose.Types.ObjectId[];
   createdAt: Date;
@@ -20,6 +22,12 @@ const NotificationSchema = new Schema<INotification>({
     type: String,
     enum: ['deadline', 'new_opportunity', 'status_update', 'announcement', 'system'],
     default: 'system'
+  },
+  link: { type: String, default: '' },
+  targetRole: {
+    type: String,
+    enum: ['admin', 'assistant', 'student', 'all'],
+    default: 'all'
   },
   isRead: { type: Boolean, default: false },
   readBy: [{ type: Schema.Types.ObjectId, ref: 'User' }],

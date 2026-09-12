@@ -6,8 +6,13 @@ import mongoose from 'mongoose';
 export const getNotifications = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?._id;
+    const userRole = req.user?.role || 'student';
     const notifications = await Notification.find({
-      $or: [{ userId }, { isGlobal: true }]
+      $or: [
+        { userId },
+        { isGlobal: true, targetRole: { $in: ['all', userRole, null] } },
+        { isGlobal: true, targetRole: { $exists: false } }
+      ]
     }).sort({ createdAt: -1 }).limit(50);
     const notificationsWithReadStatus = notifications.map((n) => ({
       ...n.toObject(),
@@ -25,10 +30,15 @@ export const getNotifications = async (req: AuthRequest, res: Response): Promise
 export const getUnreadCount = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?._id;
+    const userRole = req.user?.role || 'student';
     const count = await Notification.countDocuments({
       $or: [
         { userId, isRead: false },
-        { isGlobal: true, readBy: { $ne: userId } }
+        {
+          isGlobal: true,
+          targetRole: { $in: ['all', userRole, null] },
+          readBy: { $ne: userId }
+        }
       ]
     });
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -78,12 +88,15 @@ export const markAllAsRead = async (req: AuthRequest, res: Response): Promise<vo
 
 export const createAnnouncement = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { title, message, type, userId } = req.body;
+    const { title, message, type, userId, targetRole, link } = req.body;
     const notification = await Notification.create({
-      title, message,
+      title,
+      message,
       type: type || 'announcement',
       isGlobal: !userId,
       userId: userId || null,
+      targetRole: targetRole || 'all',
+      link: link || '',
     });
     res.status(201).json({ message: 'Announcement sent', notification });
   } catch (error) {

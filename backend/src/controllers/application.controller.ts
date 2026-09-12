@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import StudentApplication from '../models/StudentApplication';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
+import { createSystemNotification } from '../utils/notify';
 
 export const getApplications = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -88,6 +89,20 @@ export const createPublicApplication = async (req: Request, res: Response): Prom
       assignedAssistantId,
       status: 'In Progress',
     });
+
+    // Notify assistants & admins of new application request
+    try {
+      await createSystemNotification({
+        title: `New Application: ${application.opportunityName}`,
+        message: `${application.studentName} applied for ${application.opportunityName}`,
+        type: 'new_opportunity',
+        targetRole: 'assistant',
+        link: '/admin/assistance-requests',
+      });
+    } catch {
+      // do not fail application creation
+    }
+
     res.status(201).json({ message: 'Application assistance request submitted successfully', application });
   } catch (error: any) {
     console.error('Public Application Error:', error);
@@ -115,6 +130,21 @@ export const updateApplication = async (req: AuthRequest, res: Response): Promis
     Object.assign(application, req.body);
     application.updatedAt = new Date();
     await application.save();
+
+    // Notify student about status change if studentId exists
+    try {
+      if (application.studentId) {
+        await createSystemNotification({
+          title: `Application Updated: ${application.opportunityName}`,
+          message: `Your application status is now "${application.status}".`,
+          type: 'status_update',
+          userId: application.studentId,
+          link: '/dashboard/applications',
+        });
+      }
+    } catch {
+      // ignore
+    }
 
     res.json({ message: 'Application updated successfully', application });
   } catch (error) {
@@ -186,6 +216,21 @@ export const resolveApplication = async (req: AuthRequest, res: Response): Promi
     application.resolutionProof = resolutionProof;
     application.updatedAt = new Date();
     await application.save();
+
+    // Notify student about resolution
+    try {
+      if (application.studentId) {
+        await createSystemNotification({
+          title: `Application Resolved: ${application.opportunityName}`,
+          message: `Your application assistance request has been successfully resolved!`,
+          type: 'status_update',
+          userId: application.studentId,
+          link: '/dashboard/applications',
+        });
+      }
+    } catch {
+      // ignore
+    }
 
     res.json({ message: 'Application task resolved successfully', application });
   } catch (error) {

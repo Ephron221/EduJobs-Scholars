@@ -1,9 +1,24 @@
 import { Request, Response } from 'express';
 import Contact from '../models/Contact';
+import { createSystemNotification } from '../utils/notify';
 
 export const createMessage = async (req: Request, res: Response) => {
   try {
     const message = await Contact.create(req.body);
+
+    try {
+      const { name, subject, email } = req.body;
+      await createSystemNotification({
+        title: `New Inquiry from ${name || 'Visitor'}`,
+        message: subject ? `${subject} (${email || ''})` : `Message received from ${email || 'Contact form'}`,
+        type: 'announcement',
+        targetRole: 'admin',
+        link: '/admin/messages',
+      });
+    } catch {
+      // do not fail inquiry creation
+    }
+
     res.status(201).json(message);
   } catch (error) {
     res.status(400).json({ message: 'Error creating message', error });

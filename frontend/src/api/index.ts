@@ -141,3 +141,15 @@ export const successStoryAPI = {
   update: (id: string, data: unknown) => api.put(`/success-stories/${id}`, data),
   delete: (id: string) => api.delete(`/success-stories/${id}`),
 };
+
+export const chatAPI = {
+  getUsers: () => api.get('/chat/users'),
+  getConversation: (userId: string) => api.get(`/chat/${userId}`),
+  sendMessage: (userId: string, content: string) => api.post(`/chat/${userId}`, { content }),
+  deleteMessage: (id: string) => api.delete(`/chat/${id}`),
+  getAllMessages: (params?: Record<string, unknown>) => api.get('/chat/all-messages', { params }),
+  getPendingDeletions: () => api.get('/chat/pending-deletions'),
+  approveDeletion: (id: string, approve: boolean) => api.post(`/chat/${id}/approve-delete`, { approve }),
+  ping: () => api.put('/chat/ping'),
+  logout: () => api.put('/chat/logout'),
+};

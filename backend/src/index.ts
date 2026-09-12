@@ -25,6 +25,7 @@ import successStoryRoutes from './routes/successStory.routes';
 import aiRoutes from './routes/ai.routes';
 import whatsappRoutes from './routes/whatsapp.routes';
 import serviceRoutes from './routes/service.routes';
+import chatRoutes from './routes/chat.routes';
 
 dotenv.config();
 
@@ -123,6 +124,7 @@ app.use('/api/success-stories', successStoryRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/services', serviceRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

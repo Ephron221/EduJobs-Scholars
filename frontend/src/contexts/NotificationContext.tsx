@@ -2,11 +2,12 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { notificationAPI } from '../api';
 import { useAuth } from './AuthContext';
 
-interface Notification {
+export interface Notification {
   _id: string;
   title: string;
   message: string;
   type: string;
+  link?: string;
   isRead: boolean;
   isGlobal: boolean;
   createdAt: string;
@@ -16,8 +17,8 @@ interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
   fetchNotifications: () => void;
-  markRead: (id: string) => void;
-  markAllRead: () => void;
+  markRead: (id: string) => Promise<void>;
+  markAllRead: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | null>(null);
@@ -31,27 +32,34 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     if (!isAuthenticated) return;
     try {
       const res = await notificationAPI.getAll();
-      setNotifications(res.data.notifications);
+      const list = Array.isArray(res.data?.notifications) ? res.data.notifications : (Array.isArray(res.data) ? res.data : []);
+      setNotifications(list);
       const countRes = await notificationAPI.getUnreadCount();
-      setUnreadCount(countRes.data.count);
+      setUnreadCount(countRes.data?.count || 0);
     } catch { /* silent */ }
   };
 
   const markRead = async (id: string) => {
-    await notificationAPI.markRead(id);
-    setNotifications((prev) => prev.map((n) => n._id === id ? { ...n, isRead: true } : n));
-    setUnreadCount((prev) => Math.max(0, prev - 1));
+    try {
+      await notificationAPI.markRead(id);
+      setNotifications((prev) => prev.map((n) => n._id === id ? { ...n, isRead: true } : n));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch { /* silent */ }
   };
 
   const markAllRead = async () => {
-    await notificationAPI.markAllRead();
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    setUnreadCount(0);
+    try {
+      await notificationAPI.markAllRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch { /* silent */ }
   };
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchNotifications();
+      const interval = setInterval(fetchNotifications, 15000);
+      return () => clearInterval(interval);
     }
   }, [isAuthenticated]);
 

@@ -27,6 +27,7 @@ import SavedOpportunities from './pages/student/SavedOpportunities';
 import ApplicationTracker from './pages/student/ApplicationTracker';
 import StudentNotifications from './pages/student/StudentNotifications';
 import StudentProfile from './pages/student/StudentProfile';
+import StudentMessages from './pages/student/StudentMessages';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -39,7 +40,7 @@ import ManageUsers from './pages/admin/ManageUsers';
 import GuidanceAdmin from './pages/admin/GuidanceAdmin';
 import Announcements from './pages/admin/Announcements';
 import ManageServices from './pages/admin/ManageServices';
-import ContactMessages from './pages/admin/ContactMessages';
+import AdminMessages from './pages/admin/AdminMessages';
 import AdminProfile from './pages/admin/AdminProfile';
 import HeroImages from './pages/admin/HeroImages';
 import SuccessStories from './pages/admin/SuccessStories';
@@ -108,6 +109,7 @@ function AppRoutes() {
       <Route path="/dashboard/saved" element={<ProtectedRoute><SavedOpportunities /></ProtectedRoute>} />
       <Route path="/dashboard/applications" element={<ProtectedRoute><ApplicationTracker /></ProtectedRoute>} />
       <Route path="/dashboard/notifications" element={<ProtectedRoute><StudentNotifications /></ProtectedRoute>} />
+      <Route path="/dashboard/messages" element={<ProtectedRoute><StudentMessages /></ProtectedRoute>} />
       <Route path="/dashboard/profile" element={<ProtectedRoute><StudentProfile /></ProtectedRoute>} />
 
       {/* Admin & Assistant Shared Routes */}
@@ -117,7 +119,8 @@ function AppRoutes() {
       <Route path="/admin/student-records" element={<ProtectedRoute adminOnly assistantAllowed><StudentRecords /></ProtectedRoute>} />
       <Route path="/admin/universities" element={<ProtectedRoute adminOnly assistantAllowed><ManageUniversities /></ProtectedRoute>} />
       <Route path="/admin/jobs" element={<ProtectedRoute adminOnly assistantAllowed><ManageJobs /></ProtectedRoute>} />
-      <Route path="/admin/messages" element={<ProtectedRoute adminOnly assistantAllowed><ContactMessages /></ProtectedRoute>} />
+      <Route path="/admin/messages" element={<ProtectedRoute adminOnly assistantAllowed><AdminMessages /></ProtectedRoute>} />
+      <Route path="/admin/inquiries" element={<Navigate to="/admin/messages" replace />} />
       <Route path="/admin/announcements" element={<ProtectedRoute adminOnly assistantAllowed><Announcements /></ProtectedRoute>} />
 
       {/* Pure Admin Routes */}

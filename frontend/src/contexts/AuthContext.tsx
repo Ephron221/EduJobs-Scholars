@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authAPI } from '../api';
+import { authAPI, chatAPI } from '../api';
 
 export interface User {
   _id: string;
@@ -70,7 +70,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(newUser);
   };
 
+  // Heartbeat ping while user is logged in
+  useEffect(() => {
+    if (token && user) {
+      chatAPI.ping().catch(() => {});
+      const interval = setInterval(() => {
+        chatAPI.ping().catch(() => {});
+      }, 25000);
+
+      return () => clearInterval(interval);
+    }
+  }, [token, user?._id]);
+
   const logout = () => {
+    chatAPI.logout().catch(() => {});
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setToken(null);

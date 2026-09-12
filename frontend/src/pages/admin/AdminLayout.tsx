@@ -5,6 +5,8 @@ import {
   ClipboardList, Bell, FileText, LogOut, ChevronRight, Shield, Home, MessageSquare, Menu, X, LifeBuoy, List
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
+import NotificationDropdown from '../../components/NotificationDropdown';
 import { getAssetUrl } from '../../utils/assetUrl';
 import ThemeToggle from '../../components/ThemeToggle';
 import clsx from 'clsx';
@@ -18,7 +20,7 @@ const navItems = [
   { href: '/admin/jobs', label: 'Jobs', icon: <Briefcase size={17} />, roles: ['admin', 'assistant'] },
   { href: '/admin/users', label: 'Users', icon: <Users size={17} />, roles: ['admin'] },
   { href: '/admin/guidance', label: 'Guidance', icon: <FileText size={17} />, roles: ['admin'] },
-  { href: '/admin/messages', label: 'Inquiries', icon: <MessageSquare size={17} />, roles: ['admin', 'assistant'] },
+  { href: '/admin/messages', label: 'Messages', icon: <MessageSquare size={17} />, roles: ['admin', 'assistant'] },
   { href: '/admin/announcements', label: 'Announcements', icon: <Bell size={17} />, roles: ['admin', 'assistant'] },
   { href: '/admin/services', label: 'Manage Services', icon: <List size={17} />, roles: ['admin'] },
   { href: '/admin/hero-images', label: 'Hero Images', icon: <Home size={17} />, roles: ['admin'] },
@@ -27,10 +29,12 @@ const navItems = [
 
 export default function AdminLayout({ children, title }: { children: ReactNode; title: string }) {
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotifications();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? location.pathname === href : location.pathname.startsWith(href);
@@ -125,6 +129,24 @@ export default function AdminLayout({ children, title }: { children: ReactNode; 
           {/* Right actions */}
           <div className="flex items-center gap-3">
             <ThemeToggle />
+
+            {/* Notifications Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => { setNotifOpen(!notifOpen); setUserMenuOpen(false); }}
+                className="relative p-2.5 text-gray-600 dark:text-gray-300 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                title="Notifications"
+                aria-label="View notifications"
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold animate-pulse">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              {notifOpen && <NotificationDropdown onClose={() => setNotifOpen(false)} />}
+            </div>
 
             <div className="relative">
               <button

@@ -1,5 +1,37 @@
 import { Link } from 'react-router-dom';
-import { GraduationCap, Mail, MapPin, Twitter, Linkedin, Github, ExternalLink, Code2, BookMarked } from 'lucide-react';
+import { GraduationCap, Mail, MapPin, Twitter, ExternalLink, Code2, BookMarked, Instagram, Facebook, Youtube } from 'lucide-react';
+
+interface IconProps {
+  size?: number | string;
+  className?: string;
+}
+
+const WhatsAppIcon = ({ size = 16, className = "" }: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+    <path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" />
+    <path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" />
+  </svg>
+);
+
+const socialLinks = [
+  { icon: Twitter, href: 'https://x.com/Esron221', label: 'X (Twitter)', color: 'hover:text-gray-900 dark:hover:text-white hover:border-gray-900/30 dark:hover:border-white/30 hover:bg-gray-100 dark:hover:bg-white/10' },
+  { icon: Instagram, href: 'https://www.instagram.com/esront2/?hl=en', label: 'Instagram', color: 'hover:text-pink-500 hover:border-pink-500/30 hover:bg-pink-50 dark:hover:bg-pink-500/10' },
+  { icon: Facebook, href: 'https://www.facebook.com/profile.php?id=61593053824561', label: 'Facebook', color: 'hover:text-blue-500 hover:border-blue-500/30 hover:bg-blue-50 dark:hover:bg-blue-500/10' },
+  { icon: Youtube, href: 'https://www.youtube.com/@EduJosScholars', label: 'YouTube', color: 'hover:text-red-500 hover:border-red-500/30 hover:bg-red-50 dark:hover:bg-red-500/10' },
+  { icon: WhatsAppIcon, href: 'https://chat.whatsapp.com/BDEAa9Knxs7J3SCarkhvvE', label: 'WhatsApp', color: 'hover:text-emerald-500 hover:border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-500/10' },
+];
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -25,16 +57,22 @@ export default function Footer() {
             <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed max-w-xs">
               Connecting school graduates with university and career opportunities across Rwanda and beyond. Your future starts here.
             </p>
-            <div className="flex items-center gap-3 mt-6">
-              <a href="#" className="w-9 h-9 rounded-lg bg-white dark:bg-gray-900/5 border border-gray-200 dark:border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-all">
-                <Twitter size={16} />
-              </a>
-              <a href="#" className="w-9 h-9 rounded-lg bg-white dark:bg-gray-900/5 border border-gray-200 dark:border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-all">
-                <Linkedin size={16} />
-              </a>
-              <a href="#" className="w-9 h-9 rounded-lg bg-white dark:bg-gray-900/5 border border-gray-200 dark:border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-all">
-                <Github size={16} />
-              </a>
+            <div className="flex flex-wrap items-center gap-3 mt-6">
+              {socialLinks.map((social) => (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.label}
+                  className={`group relative w-10 h-10 rounded-xl bg-white dark:bg-gray-900/40 border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${social.color}`}
+                >
+                  <social.icon size={18} className="transition-transform duration-300 group-hover:scale-110" />
+                  <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 opacity-0 transition-all duration-200 group-hover:scale-100 group-hover:opacity-100 px-2.5 py-1 text-[11px] font-medium rounded-md bg-gray-900 text-white dark:bg-white dark:text-gray-900 pointer-events-none whitespace-nowrap shadow-sm z-10">
+                    {social.label}
+                  </span>
+                </a>
+              ))}
             </div>
           </div>
 
