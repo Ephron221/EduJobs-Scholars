@@ -16,7 +16,7 @@ export interface IStudent extends Document {
   level: string;
   institution: string;
   admissionDate: Date;
-  status: 'active' | 'pending' | 'suspended' | 'graduated';
+  status: 'admitted' | 'active' | 'pending' | 'suspended' | 'graduated' | 'rejected' | 'not_admitted' | string;
   guardianName: string;
   guardianPhone: string;
   guardianEmail: string;
@@ -26,6 +26,10 @@ export interface IStudent extends Document {
     category: 'nationalId' | 'passportPhoto' | 'diploma' | 'other';
     uploadedAt: Date;
   }[];
+  admissionDecision?: string;
+  decisionRemarks?: string;
+  decisionSentAt?: Date;
+  decisionSentBy?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -49,7 +53,7 @@ const StudentSchema = new Schema<IStudent>(
     admissionDate: { type: Date, required: true },
     status: {
       type: String,
-      enum: ['active', 'pending', 'suspended', 'graduated'],
+      enum: ['admitted', 'active', 'pending', 'suspended', 'graduated', 'rejected', 'not_admitted', 'Not Admitted / Not Accepted', 'Rejected', 'Admitted'],
       default: 'pending',
     },
     guardianName: { type: String, trim: true, default: '' },
@@ -61,6 +65,10 @@ const StudentSchema = new Schema<IStudent>(
       category: { type: String, enum: ['nationalId', 'passportPhoto', 'diploma', 'other'], default: 'other' },
       uploadedAt: { type: Date, default: Date.now },
     }],
+    admissionDecision: { type: String, default: 'Admitted' },
+    decisionRemarks: { type: String, default: '' },
+    decisionSentAt: { type: Date },
+    decisionSentBy: { type: String, default: '' },
   },
   { timestamps: true }
 );

@@ -112,6 +112,8 @@ export const studentAPI = {
     api.delete(`/students/${id}/files`, { data: { fileUrl } }),
   renameFile: (id: string, fileUrl: string, name: string) =>
     api.patch(`/students/${id}/files`, { fileUrl, name }),
+  sendDecision: (id: string, data: Record<string, unknown>) =>
+    api.post(`/students/${id}/send-decision`, data),
 };
 
 export const contactAPI = {

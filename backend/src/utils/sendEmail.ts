@@ -5,6 +5,7 @@ interface EmailOptions {
   subject: string;
   message: string;
   html?: string;
+  replyTo?: string;
 }
 
 const sendEmail = async (options: EmailOptions) => {
@@ -38,9 +39,18 @@ const sendEmail = async (options: EmailOptions) => {
   const mailOptions = {
     from: `"EduJobs Scholars" <${EMAIL_USER}>`,
     to: options.email,
+    replyTo: options.replyTo || EMAIL_USER,
     subject: options.subject,
     text: options.message,
     html: options.html,
+    headers: {
+      'X-Priority': '3',
+      'X-MSMail-Priority': 'Normal',
+      'Importance': 'Normal',
+      'X-Mailer': 'EduJobs-Scholars-Admissions-Mailer/1.0',
+      'Auto-Submitted': 'auto-generated',
+      'X-Auto-Response-Suppress': 'OOF, AutoReply',
+    },
   };
 
   try {

@@ -348,6 +348,20 @@
   animation-play-state: paused;
 }
 
+@keyframes heroMarquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-33.333333%); }
+}
+
+.animate-hero-marquee {
+  animation: heroMarquee 42s linear infinite;
+  width: max-content;
+}
+
+.animate-hero-marquee:hover {
+  animation-play-state: paused;
+}
+
 @keyframes adIconPulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(6,182,212,0.35); }
   50%       { box-shadow: 0 0 0 12px rgba(6,182,212,0); }

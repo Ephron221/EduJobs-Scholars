@@ -1,18 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, GraduationCap, Briefcase, Users, Search, BookOpen, ChevronDown, Star, Zap, Calendar, MapPin, Clock, X, ExternalLink, Code2, BookMarked, ChevronLeft, ChevronRight, Sparkles, MessageSquare, Heart, User, Quote, MessageCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, GraduationCap, Briefcase, Users, Search, BookOpen, ChevronDown, Star, Zap, Calendar, MapPin, Clock, X, ExternalLink, Code2, BookMarked, ChevronLeft, ChevronRight, Sparkles, MessageSquare, Heart, User, Quote, MessageCircle, Compass, Play, Pause, Maximize2, ZoomIn, ZoomOut, Eye, Globe } from 'lucide-react';
 import { universityAPI, jobAPI, programAPI, heroImageAPI, successStoryAPI } from '../../api';
 import UniversityCard from '../../components/UniversityCard';
 import JobCard from '../../components/JobCard';
 import Loader from '../../components/Loader';
 import Modal from '../../components/Modal';
+import { HeroImageItem } from '../../components/HeroCinemaShowcase';
+import HeroImageMarquee from '../../components/HeroImageMarquee';
 import { getAssetUrl } from '../../utils/assetUrl';
 import clsx from 'clsx';
 
-type HeroImage = {
-  imageUrl: string;
-  altText?: string;
-};
+export type HeroImage = HeroImageItem;
 
 interface SuccessStory {
   _id: string;
@@ -115,7 +115,6 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [searchType, setSearchType] = useState('all');
-  const [currentHeroImage, setCurrentHeroImage] = useState(0);
   const [showAmategekoPopup, setShowAmategekoPopup] = useState(false);
   const [showDevCard, setShowDevCard] = useState(false);
   const [selectedStory, setSelectedStory] = useState<SuccessStory | null>(null);
@@ -163,14 +162,13 @@ export default function HomePage() {
   }, []);
 
   const particlesRef = useRef<HTMLCanvasElement>(null);
-  const heroIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [uRes, jRes, pRes, hRes, sRes] = await Promise.all([
-          universityAPI.getAll({ featured: 'true', limit: 6 }),
-          jobAPI.getAll({ featured: 'true', limit: 6 }),
+          universityAPI.getAll({ limit: 50 }),
+          jobAPI.getAll({ limit: 50 }),
           programAPI.getAll({ limit: 8 }),
           heroImageAPI.getAll(),
           successStoryAPI.getAll(),
@@ -185,18 +183,6 @@ export default function HomePage() {
     };
     fetchData();
   }, []);
-
-  // Hero image carousel
-  useEffect(() => {
-    if (heroImages.length > 1) {
-      heroIntervalRef.current = setInterval(() => {
-        setCurrentHeroImage((prev) => (prev + 1) % heroImages.length);
-      }, 5000);
-    }
-    return () => {
-      if (heroIntervalRef.current) clearInterval(heroIntervalRef.current);
-    };
-  }, [heroImages.length]);
 
   useEffect(() => {
     const canvas = particlesRef.current;
@@ -250,26 +236,221 @@ export default function HomePage() {
     { icon: <Users size={24} />, label: 'Students Helped', value: 10000, suffix: '+' },
   ];
 
+  // Full-bleed video sliding background states
+  const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
+  const [heroDirection, setHeroDirection] = useState(1);
+  const [isHeroPlaying, setIsHeroPlaying] = useState(true);
+  const [heroProgress, setHeroProgress] = useState(0);
+  const [isHeroHovered, setIsHeroHovered] = useState(false);
+  const [heroLightboxOpen, setHeroLightboxOpen] = useState(false);
+  const [heroLightboxZoom, setHeroLightboxZoom] = useState(1);
+
+  const defaultHeroSlides: HeroImageItem[] = [
+    {
+      _id: 'default-1',
+      imageUrl: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1920&q=85',
+      altText: 'Graduates Celebrating On Campus',
+      category: 'Graduation',
+      university: 'University of Rwanda',
+      country: 'Rwanda',
+    },
+    {
+      _id: 'default-2',
+      imageUrl: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1920&q=85',
+      altText: 'University Campus & Academic Admissions',
+      category: 'Application Open',
+      university: 'East Africa University',
+      country: 'Rwanda',
+    },
+    {
+      _id: 'default-3',
+      imageUrl: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1920&q=85',
+      altText: 'Career Guidance & Professional Opportunities',
+      category: 'Opportunities',
+      university: 'EduJobs Scholars',
+      country: 'Global',
+    },
+  ];
+
+  const activeHeroSlides = heroImages.length > 0 ? heroImages : defaultHeroSlides;
+
+  // Auto-advance video-style sliding right to left
+  const heroSlideDuration = 6500;
+  const heroIntervalMs = 50;
+
+  useEffect(() => {
+    if (!isHeroPlaying || isHeroHovered || heroLightboxOpen || activeHeroSlides.length <= 1) {
+      return;
+    }
+
+    const step = (heroIntervalMs / heroSlideDuration) * 100;
+    const timer = setInterval(() => {
+      setHeroProgress((prev) => {
+        if (prev >= 100) {
+          setHeroDirection(1); // Right to Left progression
+          setCurrentHeroIndex((idx) => (idx + 1) % activeHeroSlides.length);
+          return 0;
+        }
+        return prev + step;
+      });
+    }, heroIntervalMs);
+
+    return () => clearInterval(timer);
+  }, [isHeroPlaying, isHeroHovered, heroLightboxOpen, activeHeroSlides.length]);
+
+  const nextHeroSlide = () => {
+    setHeroDirection(1);
+    setHeroProgress(0);
+    setCurrentHeroIndex((prev) => (prev + 1) % activeHeroSlides.length);
+  };
+
+  const prevHeroSlide = () => {
+    setHeroDirection(-1);
+    setHeroProgress(0);
+    setCurrentHeroIndex((prev) => (prev - 1 + activeHeroSlides.length) % activeHeroSlides.length);
+  };
+
+  const goToHeroSlide = (idx: number) => {
+    setHeroDirection(idx > currentHeroIndex ? 1 : -1);
+    setHeroProgress(0);
+    setCurrentHeroIndex(idx);
+  };
+
+  const currentHeroSlide = activeHeroSlides[currentHeroIndex] || activeHeroSlides[0];
+
+  // Smooth full-bleed slide animation from right to left
+  const fullBleedSlideVariants: any = {
+    enter: (dir: number) => ({
+      x: dir > 0 ? '100%' : '-100%',
+      opacity: 1,
+    }),
+    center: {
+      x: '0%',
+      opacity: 1,
+      transition: {
+        x: { duration: 1.3, ease: [0.16, 1, 0.3, 1] },
+        opacity: { duration: 0.3 },
+      },
+    },
+    exit: (dir: number) => ({
+      x: dir > 0 ? '-100%' : '100%',
+      opacity: 1,
+      transition: {
+        x: { duration: 1.3, ease: [0.16, 1, 0.3, 1] },
+        opacity: { duration: 0.3 },
+      },
+    }),
+  };
+
   const heroServices = [
     {
       label: 'Universities',
       description: 'Find institutions',
       icon: <GraduationCap size={34} />,
       className: 'hero-service-universities',
+      path: '/universities',
     },
     {
       label: 'Guidance',
       description: 'Career planning',
       icon: <BookOpen size={34} />,
       className: 'hero-service-guidance',
+      path: '/guidance',
     },
     {
       label: 'Jobs',
       description: 'Career access',
       icon: <Briefcase size={34} />,
       className: 'hero-service-jobs',
+      path: '/jobs',
     },
   ];
+
+  // Filter ONLY currently opened university and job applications based on valid deadlines
+  const openedOpportunities = useMemo(() => {
+    const now = new Date().getTime();
+    const items: Array<{
+      id: string;
+      kind: 'university' | 'job';
+      badge: string;
+      organization: string;
+      title: string;
+      deadlineText: string;
+      link: string;
+    }> = [];
+
+    // 1. Only Currently Opened Universities (Deadline is in the future or ongoing)
+    if (universities && universities.length > 0) {
+      universities.forEach((u: any) => {
+        const hasDeadline = u.deadline && typeof u.deadline === 'string' && u.deadline.trim() !== '';
+        const deadlineTime = hasDeadline ? new Date(u.deadline).getTime() : NaN;
+        // Exclude expired deadlines
+        const isOpen = !hasDeadline || (!isNaN(deadlineTime) && deadlineTime > now);
+
+        if (isOpen) {
+          let deadlineText = '';
+          if (!isNaN(deadlineTime)) {
+            try {
+              deadlineText = `Deadline: ${new Date(u.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+            } catch {
+              deadlineText = `Deadline: ${u.deadline}`;
+            }
+          } else if (u.intake) {
+            deadlineText = `${u.intake} Intake`;
+          } else {
+            deadlineText = 'Admissions Open';
+          }
+
+          items.push({
+            id: `uni-${u._id}`,
+            kind: 'university',
+            badge: u.category ? `🎓 ${u.category}` : '🎓 University',
+            organization: u.name,
+            title: u.intake ? `${u.intake}` : (u.country ? `Admissions in ${u.country}` : 'Applications Open'),
+            deadlineText,
+            link: `/universities/${u._id}`,
+          });
+        }
+      });
+    }
+
+    // 2. Only Currently Opened Jobs & Internships (Deadline is in the future or active)
+    if (jobs && jobs.length > 0) {
+      jobs.forEach((j: any) => {
+        const hasDeadline = j.deadline && j.deadline !== '';
+        const deadlineTime = hasDeadline ? new Date(j.deadline).getTime() : NaN;
+        // Exclude expired jobs
+        const isOpen = !hasDeadline || (!isNaN(deadlineTime) && deadlineTime > now);
+
+        if (isOpen) {
+          let deadlineText = '';
+          if (!isNaN(deadlineTime)) {
+            try {
+              deadlineText = `Deadline: ${new Date(j.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+            } catch {
+              deadlineText = `Deadline: ${j.deadline}`;
+            }
+          } else {
+            deadlineText = 'Applications Open';
+          }
+
+          const badgeText = j.type === 'internship' ? '💼 Internship' : j.type === 'government' ? '🏛️ Gov Job' : '💼 Job';
+
+          items.push({
+            id: `job-${j._id}`,
+            kind: 'job',
+            badge: badgeText,
+            organization: j.company || 'Hiring Organization',
+            title: `${j.title} (${j.location || 'Rwanda'})`,
+            deadlineText,
+            link: '/jobs',
+          });
+        }
+      });
+    }
+
+    return items;
+  }, [universities, jobs]);
 
   return (
     <div className="min-h-screen">
@@ -325,115 +506,203 @@ export default function HomePage() {
       )}
 
 
-      {/* HERO SECTION */}
-      <section className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-gray-900 pt-24 text-white">
-        {/* Hero Images Background Slideshow */}
-        <div className="absolute inset-0 z-0">
-          {heroImages.length > 0 ? heroImages.map((image, idx) => (
-            <div
-              key={idx}
-              className={clsx(
-                "absolute inset-0 transition-opacity duration-1000 ease-in-out",
-                currentHeroImage === idx ? "opacity-100" : "opacity-0"
-              )}
+      {/* FULL-BLEED VIDEO HERO SECTION (Fulfilling the entire hero section with right-to-left video sliding images) */}
+      <section
+        onMouseEnter={() => setIsHeroHovered(true)}
+        onMouseLeave={() => setIsHeroHovered(false)}
+        className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-gray-950 pt-20 pb-16 text-white flex flex-col justify-between"
+      >
+        {/* FULL-WIDTH FULL-BLEED SLIDING VIDEO REEL BACKGROUND (Moving smoothly from right to left like video) */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <AnimatePresence initial={false} custom={heroDirection}>
+            <motion.div
+              key={currentHeroSlide._id || currentHeroSlide.imageUrl || currentHeroIndex}
+              custom={heroDirection}
+              variants={fullBleedSlideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              className="absolute inset-0 w-full h-full"
             >
-              <img
-                src={getAssetUrl(image.imageUrl)}
-                alt={image.altText || 'Hero Background'}
-                className="w-full h-full object-cover brightness-[1.05]"
-              />
-              <div className="absolute inset-0 bg-black/10" />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-gray-900/90" />
-            </div>
-          )) : (
-            <div className="absolute inset-0 bg-gray-900" />
-          )}
+              {/* Ken Burns video camera gliding pan from right to left */}
+              <motion.div
+                initial={{ x: '2.5%', scale: 1.02 }}
+                animate={{ x: '-2.5%', scale: 1.06 }}
+                transition={{ duration: 7, ease: 'linear' }}
+                className="w-full h-full"
+              >
+                <img
+                  src={getAssetUrl(currentHeroSlide.imageUrl)}
+                  alt={currentHeroSlide.altText || 'Hero Background'}
+                  className="w-full h-full object-cover brightness-[1.05] contrast-[1.04]"
+                />
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Clean Film-Grade Contrast Overlays: Keeps background clearly visible while ensuring perfect text readability */}
+          <div className="absolute inset-0 bg-black/35 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-gray-950/70 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-950/70 via-transparent to-gray-950/50 pointer-events-none" />
         </div>
 
         {/* Particle canvas background */}
-        <canvas ref={particlesRef} className="absolute inset-0 w-full h-full pointer-events-none opacity-30 z-1" />
+        <canvas ref={particlesRef} className="absolute inset-0 w-full h-full pointer-events-none opacity-25 z-1" />
 
-        <div className="absolute left-1/2 top-24 h-[580px] w-[580px] -translate-x-1/2 rounded-full bg-cyan-500/5 blur-3xl pointer-events-none z-1" />
+        {/* CONTINUOUSLY MOVING INTERACTIVE TICKER: ONLY CURRENTLY OPENED UNIVERSITY & JOB APPLICATIONS */}
+        {openedOpportunities.length > 0 && (
+          <div className="relative z-20 w-full border-b border-cyan-500/20 bg-black/65 backdrop-blur-xl py-2 overflow-hidden shadow-lg shadow-black/40">
+            <div className="page-container flex items-center gap-3">
+              {/* Live Indicator Beacon */}
+              <div className="flex items-center gap-2 px-3.5 py-1 rounded-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 text-white font-black text-[10px] sm:text-xs uppercase tracking-wider shrink-0 shadow-md shadow-red-500/30">
+                <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                <span>Open Applications ({openedOpportunities.length})</span>
+              </div>
 
-        <div className="relative z-10 page-container">
-          <div className="grid min-h-[calc(100vh-120px)] items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
+              {/* Continuous Moving Track with Only Opened Universities & Jobs */}
+              <div className="overflow-hidden whitespace-nowrap flex-1">
+                <div className="flex gap-4 sm:gap-6 items-center animate-hero-marquee hover:[animation-play-state:paused] w-max">
+                  {[...openedOpportunities, ...openedOpportunities, ...openedOpportunities].map((item, idx) => (
+                    <Link
+                      key={`${item.id}-${idx}`}
+                      to={item.link}
+                      className="inline-flex items-center gap-2.5 px-3.5 py-1 rounded-full bg-white/10 hover:bg-cyan-500 hover:text-black border border-white/20 hover:border-cyan-400 text-xs font-bold text-gray-100 hover:text-black transition-all group shrink-0 shadow-sm"
+                      title={`Click to view open application for ${item.organization}`}
+                    >
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/15 text-cyan-300 group-hover:bg-black/20 group-hover:text-black">
+                        {item.badge}
+                      </span>
+                      <span className="text-white group-hover:text-black font-extrabold">{item.organization}:</span>
+                      <span className="text-gray-200 group-hover:text-black font-medium">{item.title}</span>
+                      <span className="text-amber-300 group-hover:text-black text-[11px] font-semibold">
+                        • {item.deadlineText}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-cyan-400/20 group-hover:bg-black/20 text-cyan-200 group-hover:text-black text-[10px] uppercase font-black tracking-wider flex items-center gap-1">
+                        Apply Now <ArrowRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* FOREGROUND HERO CONTENT (Matching the deployed layout with the Orbit on the left and Headline on the right) */}
+        <div className="relative z-10 page-container w-full my-auto py-6">
+          <div className="grid min-h-[calc(100vh-220px)] items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
+            
+            {/* Left: EduJobs Scholars Orbit */}
             <div className="flex justify-center lg:justify-start">
               <div className="hero-service-orbit" aria-label="EduJobs Scholars services">
-                <div className="hero-service-center !bg-white/95 backdrop-blur-md shadow-[0_20px_50px_-12px_rgba(6,182,212,0.4)] border border-white">
-                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-600">Welcome to</p>
-                  <p className="mt-3 text-2xl font-black leading-tight text-gray-900">EduJobs Scholars</p>
-                  <p className="mt-4 text-sm font-semibold leading-relaxed text-gray-500">
+                <div className="hero-service-center !bg-white/95 dark:!bg-gray-900/95 backdrop-blur-md shadow-[0_20px_50px_-12px_rgba(6,182,212,0.4)] border border-white/60">
+                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-400">Welcome to</p>
+                  <p className="mt-3 text-2xl font-black leading-tight text-gray-900 dark:text-white">EduJobs Scholars</p>
+                  <p className="mt-4 text-sm font-semibold leading-relaxed text-gray-500 dark:text-gray-300">
                     Your gateway to universities, guidance, jobs, and opportunities.
                   </p>
                 </div>
                 <div className="hero-service-path">
                   {heroServices.map((service) => (
-                    <div key={service.label} className={`hero-service-node ${service.className}`}>
-                      <div className="hero-service-node-inner !bg-white/95 backdrop-blur-sm shadow-[0_10px_30px_-5px_rgba(6,182,212,0.3)] border border-gray-100">
-                        <div className="text-cyan-600">{service.icon}</div>
-                        <span className="text-gray-900 font-bold">{service.label}</span>
+                    <Link
+                      to={service.path}
+                      key={service.label}
+                      className={`hero-service-node ${service.className} hover:scale-110 transition-transform`}
+                      title={`Go to ${service.label}`}
+                    >
+                      <div className="hero-service-node-inner !bg-white/95 dark:!bg-gray-800/95 backdrop-blur-sm shadow-[0_10px_30px_-5px_rgba(6,182,212,0.3)] border border-gray-100 dark:border-cyan-500/20">
+                        <div className="text-cyan-600 dark:text-cyan-400">{service.icon}</div>
+                        <span className="text-gray-900 dark:text-white font-bold">{service.label}</span>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="pb-20 pt-4 text-center lg:text-left relative">
-              <div className="absolute inset-0 -z-10 bg-black/20 backdrop-blur-[2px] rounded-[3rem] -m-10 hidden lg:block" />
-              <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-cyan-500/40 bg-cyan-500/20 px-4 py-2 text-sm font-bold text-cyan-200 backdrop-blur-md animate-fade-in shadow-lg">
-                <Star size={14} className="text-cyan-400 fill-cyan-400" />
-                Connecting Rwanda's best students to global opportunities
-              </div>
+            {/* Right: Headline, Search, Buttons, Counters */}
+            <div className="pb-8 pt-4 text-center lg:text-left relative">
+              <Link
+                to="/universities"
+                className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-cyan-400/40 bg-black/60 hover:bg-cyan-500 hover:text-black px-4 py-2 text-xs sm:text-sm font-bold text-cyan-200 hover:text-black backdrop-blur-md animate-fade-in shadow-lg transition-all group"
+              >
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                </span>
+                <span>🔥 <strong className="text-white group-hover:text-black">Open University & Job Applications:</strong> View All & Apply</span>
+                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
 
               <TypewriterHeadline />
 
-              <p className="mx-auto mt-8 max-w-2xl text-lg leading-9 text-gray-50 md:text-xl lg:mx-0 animate-slide-up animation-delay-200 drop-shadow-[0_2px_4px_rgba(0,0,0,1)] font-medium">
+              <p className="mx-auto mt-6 max-w-2xl text-base sm:text-lg leading-relaxed text-gray-100 md:text-xl lg:mx-0 animate-slide-up animation-delay-200 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-medium">
                 Discover universities, scholarships, career opportunities, and practical guidance designed to help school graduates choose a path, prepare well, and move forward with confidence.
               </p>
 
-              <form onSubmit={handleSearch} className="mx-auto mt-9 max-w-2xl animate-slide-up animation-delay-300 lg:mx-0">
-                <div className="flex flex-col gap-2 rounded-2xl border border-white/20 bg-black/30 backdrop-blur-md p-2 shadow-2xl sm:flex-row">
+              {/* Universal Search Form */}
+              <form onSubmit={handleSearch} className="mx-auto mt-8 max-w-2xl animate-slide-up animation-delay-300 lg:mx-0">
+                <div className="flex flex-col gap-2 rounded-2xl border border-white/25 bg-black/60 backdrop-blur-xl p-2 shadow-2xl sm:flex-row">
                   <select
                     value={searchType}
                     onChange={(e) => setSearchType(e.target.value)}
-                    className="rounded-xl border border-white/10 bg-white/10 px-3 py-3 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="rounded-xl border border-white/10 bg-white/10 px-3.5 py-3 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   >
                     <option value="all" className="bg-gray-900">All</option>
                     <option value="universities" className="bg-gray-900">Universities</option>
                     <option value="jobs" className="bg-gray-900">Jobs</option>
                   </select>
                   <div className="relative flex-1">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70" />
+                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/70" />
                     <input
                       type="text"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder="Search universities, programs, jobs..."
-                      className="w-full rounded-xl bg-transparent py-3 pl-9 pr-4 text-sm text-white placeholder-white/60 focus:outline-none"
+                      className="w-full rounded-xl bg-transparent py-3 pl-10 pr-4 text-sm text-white placeholder-white/70 focus:outline-none"
                     />
                   </div>
-                  <button type="submit" className="btn-primary flex items-center justify-center gap-2 rounded-xl py-3 shadow-lg shadow-cyan-500/30">
+                  <button type="submit" className="btn-primary flex items-center justify-center gap-2 rounded-xl py-3 px-6 shadow-lg shadow-cyan-500/30 font-black text-xs uppercase tracking-wider">
                     <Search size={14} /> Search
                   </button>
                 </div>
               </form>
 
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-4 animate-slide-up animation-delay-500 lg:justify-start">
-                <Link to="/universities" className="btn-primary inline-flex items-center gap-2 px-7 py-3.5 shadow-lg shadow-cyan-500/30">
+              {/* Trending Searches */}
+              <div className="mt-3 flex flex-wrap items-center justify-center lg:justify-start gap-1.5 text-xs">
+                <span className="text-[11px] font-bold text-gray-300 uppercase tracking-wider">Trending:</span>
+                {['University of Rwanda', 'Computer Science', 'Scholarship', 'Internship'].map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => {
+                      setSearch(tag);
+                      window.location.href = `/universities?search=${encodeURIComponent(tag)}`;
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-black/50 hover:bg-cyan-500/20 text-gray-200 hover:text-cyan-300 border border-white/15 backdrop-blur-sm transition-colors text-[11px] font-medium"
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-7 flex flex-wrap items-center justify-center gap-4 animate-slide-up animation-delay-500 lg:justify-start">
+                <Link to="/universities" className="btn-primary inline-flex items-center gap-2 px-7 py-3.5 shadow-lg shadow-cyan-500/30 text-sm font-black rounded-xl">
                   <GraduationCap size={18} /> Explore Universities
                 </Link>
                 <a 
                   href="https://chat.whatsapp.com/BDEAa9Knxs7J3SCarkhvvE" 
                   target="_blank" 
                   rel="noreferrer" 
-                  className="btn-secondary !bg-green-500/10 !text-green-500 !border-green-500/20 backdrop-blur-sm inline-flex items-center gap-2 px-7 py-3.5 hover:!bg-green-500/20"
+                  className="btn-secondary !bg-emerald-500/20 !text-emerald-300 !border-emerald-500/40 backdrop-blur-md inline-flex items-center gap-2 px-7 py-3.5 hover:!bg-emerald-500/30 text-sm font-black rounded-xl"
                 >
                   <MessageCircle size={18} /> Join WhatsApp Group
                 </a>
               </div>
 
-              <div className="mt-14 grid grid-cols-3 gap-4 text-left sm:gap-8">
+              {/* Live Statistics Counters */}
+              <div className="mt-12 grid grid-cols-3 gap-4 text-left sm:gap-8 border-t border-white/10 pt-6">
                 {stats.map((stat) => (
                   <div key={stat.label}>
                     <div className="text-3xl font-black leading-none text-white md:text-5xl drop-shadow-lg">
@@ -446,15 +715,201 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
-          </div>
 
-          {/* Scroll down hint */}
-          <div className="absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 text-white/80 animate-bounce">
-            <span className="text-xs">Scroll to explore</span>
-            <ChevronDown size={16} />
           </div>
         </div>
+
+        {/* BOTTOM VIDEO PLAYER CONTROLS & TIMELINE DOCK (Smooth Right-to-Left Slide Controls) */}
+        <div className="relative z-20 w-full page-container pb-2">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 sm:p-4 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 shadow-2xl">
+            {/* Active Image Tag & Caption */}
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-cyan-400 text-black shadow-md shrink-0">
+                {currentHeroSlide.category || 'Featured'}
+              </span>
+              <p className="text-xs sm:text-sm font-black text-white uppercase tracking-tight truncate max-w-xs sm:max-w-md">
+                {currentHeroSlide.altText || 'EduJobs Scholars'}
+              </p>
+              {currentHeroSlide.university && (
+                <span className="hidden md:inline-flex items-center gap-1 text-[11px] font-bold text-cyan-300">
+                  <GraduationCap size={12} /> {currentHeroSlide.university}
+                </span>
+              )}
+            </div>
+
+            {/* Video Controls & Indicators */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              {/* Play / Pause Toggle */}
+              <button
+                onClick={() => setIsHeroPlaying(!isHeroPlaying)}
+                className="p-2 rounded-xl bg-white/10 hover:bg-cyan-500 hover:text-black text-white border border-white/20 backdrop-blur-md transition-all active:scale-95"
+                title={isHeroPlaying ? 'Pause video slide' : 'Play video slide'}
+              >
+                {isHeroPlaying ? <Pause size={14} /> : <Play size={14} className="ml-0.5" />}
+              </button>
+
+              {/* Prev / Next slide */}
+              <button
+                onClick={prevHeroSlide}
+                className="p-2 rounded-xl bg-white/10 hover:bg-cyan-500 hover:text-black text-white border border-white/20 backdrop-blur-md transition-all active:scale-95"
+                title="Previous slide (Right to Left)"
+              >
+                <ChevronLeft size={15} />
+              </button>
+              <button
+                onClick={nextHeroSlide}
+                className="p-2 rounded-xl bg-white/10 hover:bg-cyan-500 hover:text-black text-white border border-white/20 backdrop-blur-md transition-all active:scale-95"
+                title="Next slide (Right to Left)"
+              >
+                <ChevronRight size={15} />
+              </button>
+
+              {/* Interactive Thumbnail / Slide Dots */}
+              <div className="flex items-center gap-1.5 px-2">
+                {activeHeroSlides.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => goToHeroSlide(idx)}
+                    className={clsx(
+                      'h-2 rounded-full transition-all duration-300',
+                      currentHeroIndex === idx
+                        ? 'w-6 bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)]'
+                        : 'w-2 bg-white/30 hover:bg-white/60'
+                    )}
+                    title={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+
+              {/* Fullscreen HD Clear Inspect Modal Button */}
+              <button
+                onClick={() => {
+                  setHeroLightboxZoom(1);
+                  setHeroLightboxOpen(true);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500 text-cyan-300 hover:text-black border border-cyan-400/30 font-bold text-xs flex items-center gap-1.5 transition-all shadow-lg"
+                title="View full image in HD clarity"
+              >
+                <Maximize2 size={13} />
+                <span className="hidden sm:inline">HD Clear</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Running Video Timeline Progress Bar */}
+          <div className="w-full h-1 bg-white/15 rounded-full overflow-hidden mt-2">
+            <motion.div
+              className="h-full bg-gradient-to-r from-cyan-400 via-cyan-300 to-blue-500 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.8)]"
+              style={{ width: `${heroProgress}%` }}
+              transition={{ ease: 'linear' }}
+            />
+          </div>
+        </div>
+
+        {/* FULLSCREEN HD LIGHTBOX MODAL */}
+        <AnimatePresence>
+          {heroLightboxOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setHeroLightboxOpen(false)}
+              className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-xl flex flex-col justify-between p-4 sm:p-8"
+            >
+              <div
+                className="flex items-center justify-between z-20 pb-4 border-b border-white/10"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-cyan-400 text-black">
+                    {currentHeroSlide.category || 'Hero Image'}
+                  </span>
+                  <h3 className="text-base sm:text-lg font-bold text-white truncate max-w-md">
+                    {currentHeroSlide.altText}
+                  </h3>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setHeroLightboxZoom((z) => Math.max(0.7, z - 0.25))}
+                    className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all"
+                    title="Zoom Out"
+                  >
+                    <ZoomOut size={18} />
+                  </button>
+                  <button
+                    onClick={() => setHeroLightboxZoom((z) => Math.min(2.5, z + 0.25))}
+                    className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all"
+                    title="Zoom In"
+                  >
+                    <ZoomIn size={18} />
+                  </button>
+                  <button
+                    onClick={() => setHeroLightboxOpen(false)}
+                    className="p-2.5 rounded-xl bg-red-500/20 hover:bg-red-500 text-white transition-all ml-2"
+                    title="Close Preview (ESC)"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              <div
+                className="relative flex-1 flex items-center justify-center overflow-auto py-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <motion.img
+                  src={getAssetUrl(currentHeroSlide.imageUrl)}
+                  alt={currentHeroSlide.altText}
+                  style={{ transform: `scale(${heroLightboxZoom})` }}
+                  className="max-h-[82vh] max-w-full object-contain rounded-2xl shadow-2xl transition-transform duration-200 select-none cursor-grab active:cursor-grabbing"
+                />
+
+                {activeHeroSlides.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevHeroSlide}
+                      className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 p-3 sm:p-4 rounded-2xl bg-black/60 hover:bg-cyan-500 hover:text-black text-white border border-white/20 backdrop-blur-md transition-all shadow-2xl"
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <button
+                      onClick={nextHeroSlide}
+                      className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 p-3 sm:p-4 rounded-2xl bg-black/60 hover:bg-cyan-500 hover:text-black text-white border border-white/20 backdrop-blur-md transition-all shadow-2xl"
+                    >
+                      <ChevronRight size={24} />
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <div
+                className="z-20 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-4 text-xs text-gray-300"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center gap-4">
+                  {currentHeroSlide.university && (
+                    <span className="flex items-center gap-1.5 text-cyan-300 font-semibold">
+                      <GraduationCap size={15} /> Source: {currentHeroSlide.university}
+                    </span>
+                  )}
+                  {currentHeroSlide.country && (
+                    <span className="flex items-center gap-1.5 text-emerald-300 font-semibold">
+                      <Globe size={15} /> Region: {currentHeroSlide.country}
+                    </span>
+                  )}
+                </div>
+                <span className="text-gray-400">
+                  Image {currentHeroIndex + 1} of {activeHeroSlides.length}
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </section>
+
+      {/* CONTINUOUS VIDEO-LIKE MARQUEE REEL OF ALL UPLOADED HERO IMAGES */}
+      <HeroImageMarquee images={heroImages} onSelectImage={(idx) => goToHeroSlide(idx)} />
 
       {/* FEATURED UNIVERSITIES */}
       <section className="py-16">
@@ -480,7 +935,10 @@ export default function HomePage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {universities.map((uni: any) => (
+                  {(universities.filter((u: any) => u.featured).length > 0
+                    ? universities.filter((u: any) => u.featured).slice(0, 6)
+                    : universities.slice(0, 6)
+                  ).map((uni: any) => (
                     <UniversityCard key={uni._id} university={uni} />
                   ))}
                 </div>

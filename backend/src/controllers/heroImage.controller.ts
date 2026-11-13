@@ -5,7 +5,7 @@ import { getFileUrl } from '../utils/fileHelper';
 
 export const getHeroImages = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const images = await HeroImage.find({ isActive: true }).sort({ order: 1 });
+    const images = await HeroImage.find({ isActive: { $ne: false } }).sort({ order: 1, createdAt: -1 });
     res.json({ images });
   } catch (error) {
     res.status(500).json({ message: 'Failed to get hero images', error });

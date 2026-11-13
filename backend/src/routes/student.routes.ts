@@ -11,6 +11,7 @@ import {
   uploadStudentFiles,
   deleteStudentFile,
   renameStudentFile,
+  sendStudentDecision,
 } from '../controllers/student.controller';
 import { protect, adminOnly, staffOnly } from '../middleware/auth';
 
@@ -24,6 +25,7 @@ router.put('/:id', protect, staffOnly, updateStudent);
 router.post('/:id/upload', protect, staffOnly, uploadMixed.array('files', 10), uploadStudentFiles);
 router.delete('/:id/files', protect, staffOnly, deleteStudentFile);
 router.patch('/:id/files', protect, staffOnly, renameStudentFile);
+router.post('/:id/send-decision', protect, staffOnly, sendStudentDecision);
 
 // Only Admin can delete or toggle status (destructive/critical actions)
 router.delete('/:id', protect, adminOnly, deleteStudent);

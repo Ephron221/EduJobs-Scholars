@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, Pencil, Trash2, Users, Search, GraduationCap, CheckCircle, Ban, Eye, FileText, Activity, Download, UploadCloud, ArrowUpRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, Search, GraduationCap, CheckCircle, Ban, Eye, FileText, Activity, Download, UploadCloud, ArrowUpRight, Send, Mail, Building2, Check, Sparkles, XCircle, ShieldCheck } from 'lucide-react';
 import { studentAPI } from '../../api';
 import { useAuth } from '../../contexts/AuthContext';
 import AdminLayout from './AdminLayout';
@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { getAssetUrl } from '../../utils/assetUrl';
 import clsx from 'clsx';
+import StudentAdmissionCard, { resolveDecisionType } from '../../components/StudentAdmissionCard';
 
 interface StudentDocument {
   name: string;
@@ -41,11 +42,15 @@ interface Student {
   level: string;
   institution: string;
   admissionDate: string;
-  status: 'active' | 'pending' | 'suspended' | 'graduated';
+  status: 'admitted' | 'active' | 'pending' | 'suspended' | 'graduated' | 'rejected' | 'not_admitted' | string;
   guardianName: string;
   guardianPhone: string;
   guardianEmail: string;
   documents?: StudentDocument[];
+  admissionDecision?: string;
+  decisionRemarks?: string;
+  decisionSentAt?: string;
+  decisionSentBy?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -78,7 +83,7 @@ const EMPTY_FORM = {
   level: 'Level 1',
   institution: '',
   admissionDate: '',
-  status: 'pending' as 'active' | 'pending' | 'suspended' | 'graduated',
+  status: 'pending' as 'admitted' | 'active' | 'pending' | 'suspended' | 'graduated' | 'rejected' | 'not_admitted' | string,
   guardianName: '',
   guardianPhone: '',
   guardianEmail: '',
@@ -88,7 +93,7 @@ export default function StudentRecords() {
   const { isAdmin } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ total: 0, active: 0, pending: 0, suspended: 0, graduated: 0 });
+  const [stats, setStats] = useState({ total: 0, admitted: 0, active: 0, pending: 0, suspended: 0, graduated: 0, rejected: 0, notAdmitted: 0 });
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterLevel, setFilterLevel] = useState('');
@@ -120,6 +125,164 @@ export default function StudentRecords() {
   const [fileActionLoading, setFileActionLoading] = useState(false);
   const replaceInputRef = useRef<HTMLInputElement | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
+
+  // Admission Decision & PDF Credential Card helpers and states
+  const getDecisionRemarks = (decision: string, institution: string): string => {
+    const uni = institution || 'the university';
+    const d = resolveDecisionType(decision);
+
+    switch (d) {
+      case 'admitted':
+        return `Congratulations! Your admission to ${uni} has been officially approved. Please keep your Registration Number and Tracking PIN safe and present them when reporting to campus for orientation and registration.`;
+      case 'conditional':
+        return `Your application to ${uni} has been granted a Conditional Admission Offer. Please submit any outstanding certified academic transcripts, certificates, or identification documents to the admissions office to complete your enrollment.`;
+      case 'pending':
+        return `Your application for admission to ${uni} is currently under active review by the academic admissions committee. You will be notified via email as soon as the final evaluation is concluded.`;
+      case 'waitlisted':
+        return `Your application has been placed on the official admissions waitlist for ${uni} for this intake. Should an enrollment vacancy open, the admissions office will contact you immediately.`;
+      case 'rejected':
+        return `Thank you for your interest and application to ${uni}. Following thorough review of this cycle's applicants, we regret to inform you that we are unable to offer you admission for this academic intake. We wish you success in your future endeavors.`;
+      case 'suspended':
+        return `Your student academic status at ${uni} has been suspended. Please contact the Office of the Academic Registrar and Student Affairs immediately regarding your academic file.`;
+      case 'graduated':
+        return `Congratulations on successfully completing your academic curriculum and degree requirements at ${uni}! Your graduation status has been verified and officially recorded.`;
+      default:
+        return `Congratulations! Your admission to ${uni} has been approved.`;
+    }
+  };
+
+  const getStatusForDecision = (decision: string): string => {
+    const d = resolveDecisionType(decision);
+    switch (d) {
+      case 'admitted':
+        return 'admitted';
+      case 'conditional':
+      case 'pending':
+      case 'waitlisted':
+        return 'pending';
+      case 'rejected':
+        return 'not_admitted';
+      case 'suspended':
+        return 'suspended';
+      case 'graduated':
+        return 'graduated';
+      default:
+        return 'pending';
+    }
+  };
+
+  const [decisionModalOpen, setDecisionModalOpen] = useState(false);
+  const [decisionStudent, setDecisionStudent] = useState<Student | null>(null);
+  const [decisionForm, setDecisionForm] = useState({
+    fullName: '',
+    institution: '',
+    registrationNumber: '',
+    trackingCode: '',
+    email: '',
+    phoneNumber: '',
+    nationalId: '',
+    admissionDecision: 'Admitted / Accepted',
+    status: 'admitted' as 'admitted' | 'active' | 'pending' | 'suspended' | 'graduated' | 'not_admitted' | 'rejected' | string,
+    remarks: '',
+    level: 'Level 1',
+  });
+  const [sendingDecision, setSendingDecision] = useState(false);
+  const [decisionTab, setDecisionTab] = useState<'form' | 'preview'>('form');
+
+  const openDecisionModal = (s: Student) => {
+    setDecisionStudent(s);
+    const initialDecision =
+      s.admissionDecision ||
+      (s.status === 'admitted' || s.status === 'active'
+        ? 'Admitted / Accepted'
+        : s.status === 'graduated'
+        ? 'Graduated'
+        : s.status === 'suspended'
+        ? 'Suspended'
+        : s.status === 'rejected' || s.status === 'not_admitted' || s.status === 'Not Admitted / Not Accepted'
+        ? 'Not Admitted / Rejected'
+        : 'Application Under Review');
+    const initialStatus = s.status || getStatusForDecision(initialDecision);
+    const initialRemarks = s.decisionRemarks || getDecisionRemarks(initialDecision, s.institution || '');
+
+    setDecisionForm({
+      fullName: `${s.firstName} ${s.lastName}`.trim(),
+      institution: s.institution || 'University of Rwanda',
+      registrationNumber: s.registrationNumber || '',
+      trackingCode: s.trackingCode || (s as any).password || '',
+      email: s.email || '',
+      phoneNumber: s.phoneNumber || '',
+      nationalId: s.nationalId || '',
+      admissionDecision: initialDecision,
+      status: initialStatus,
+      remarks: initialRemarks,
+      level: s.level || 'Level 1',
+    });
+    setDecisionTab('form');
+    setDecisionModalOpen(true);
+  };
+
+  const handleDecisionChange = (newDecision: string) => {
+    const newStatus = getStatusForDecision(newDecision);
+    const newRemarks = getDecisionRemarks(newDecision, decisionForm.institution);
+    setDecisionForm((prev) => ({
+      ...prev,
+      admissionDecision: newDecision,
+      status: newStatus,
+      remarks: newRemarks,
+    }));
+  };
+
+  const handleStatusChange = (newStatus: string) => {
+    let mappedDecision = decisionForm.admissionDecision;
+    if ((newStatus === 'admitted' || newStatus === 'active') && resolveDecisionType(decisionForm.admissionDecision) !== 'admitted') {
+      mappedDecision = 'Admitted / Accepted';
+    } else if (newStatus === 'pending' && resolveDecisionType(decisionForm.admissionDecision) === 'admitted') {
+      mappedDecision = 'Application Under Review';
+    } else if (newStatus === 'not_admitted' || newStatus === 'rejected') {
+      mappedDecision = 'Not Admitted / Rejected';
+    } else if (
+      newStatus === 'suspended' &&
+      resolveDecisionType(decisionForm.admissionDecision) !== 'suspended' &&
+      resolveDecisionType(decisionForm.admissionDecision) !== 'rejected'
+    ) {
+      mappedDecision = 'Suspended';
+    } else if (newStatus === 'graduated') {
+      mappedDecision = 'Graduated';
+    }
+    const newRemarks = getDecisionRemarks(mappedDecision, decisionForm.institution);
+    setDecisionForm((prev) => ({
+      ...prev,
+      status: newStatus,
+      admissionDecision: mappedDecision,
+      remarks: newRemarks,
+    }));
+  };
+
+  const handleSendDecision = async () => {
+    if (!decisionStudent) return;
+    if (!decisionForm.email) {
+      toast.error('Applicant email is required');
+      return;
+    }
+    setSendingDecision(true);
+    try {
+      const res = await studentAPI.sendDecision(decisionStudent._id, decisionForm);
+      toast.success(res.data.message || `Admission decision dispatched to ${decisionForm.email}!`);
+      if (res.data.student) {
+        setStudents((prev) =>
+          prev.map((item) => (item._id === decisionStudent._id ? { ...item, ...res.data.student } : item))
+        );
+        setDecisionStudent((prev) => (prev ? { ...prev, ...res.data.student } : null));
+        studentAPI.getStats().then((sRes) => setStats(sRes.data)).catch(() => {});
+      }
+      setDecisionTab('preview');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to send applicant decision email');
+    } finally {
+      setSendingDecision(false);
+    }
+  };
 
   const fetchStudents = useCallback(async () => {
     setLoading(true);
@@ -415,7 +578,7 @@ export default function StudentRecords() {
         onChange={handleReplaceFile}
       />
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
         <div
           onClick={() => { setFilterStatus(''); setPage(1); }}
           className={clsx(
@@ -425,6 +588,17 @@ export default function StudentRecords() {
         >
           <div><p className="text-xs text-gray-500 dark:text-gray-400">Total</p><p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p></div>
           <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center"><Users className="text-cyan-500" size={20} /></div>
+        </div>
+
+        <div
+          onClick={() => { setFilterStatus(filterStatus === 'admitted' ? '' : 'admitted'); setPage(1); }}
+          className={clsx(
+            "glass-card p-4 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.02] active:scale-95",
+            filterStatus === 'admitted' && "ring-2 ring-cyan-400 border-transparent bg-cyan-400/5"
+          )}
+        >
+          <div><p className="text-xs text-gray-500 dark:text-gray-400">Admitted</p><p className="text-2xl font-bold text-cyan-400">{stats.admitted || 0}</p></div>
+          <div className="w-10 h-10 rounded-xl bg-cyan-400/10 flex items-center justify-center"><ShieldCheck className="text-cyan-400" size={20} /></div>
         </div>
 
         <div
@@ -453,11 +627,11 @@ export default function StudentRecords() {
           onClick={() => { setFilterStatus(filterStatus === 'suspended' ? '' : 'suspended'); setPage(1); }}
           className={clsx(
             "glass-card p-4 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.02] active:scale-95",
-            filterStatus === 'suspended' && "ring-2 ring-red-500 border-transparent bg-red-500/5"
+            filterStatus === 'suspended' && "ring-2 ring-amber-500 border-transparent bg-amber-500/5"
           )}
         >
-          <div><p className="text-xs text-gray-500 dark:text-gray-400">Suspended</p><p className="text-2xl font-bold text-red-500">{stats.suspended}</p></div>
-          <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center"><Ban className="text-red-500" size={20} /></div>
+          <div><p className="text-xs text-gray-500 dark:text-gray-400">Suspended</p><p className="text-2xl font-bold text-amber-500">{stats.suspended}</p></div>
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center"><Ban className="text-amber-500" size={20} /></div>
         </div>
 
         <div
@@ -470,6 +644,28 @@ export default function StudentRecords() {
           <div><p className="text-xs text-gray-500 dark:text-gray-400">Graduated</p><p className="text-2xl font-bold text-purple-500">{stats.graduated}</p></div>
           <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center"><GraduationCap className="text-purple-500" size={20} /></div>
         </div>
+
+        <div
+          onClick={() => { setFilterStatus(filterStatus === 'not_admitted' ? '' : 'not_admitted'); setPage(1); }}
+          className={clsx(
+            "glass-card p-4 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.02] active:scale-95",
+            filterStatus === 'not_admitted' && "ring-2 ring-red-500 border-transparent bg-red-500/5"
+          )}
+        >
+          <div><p className="text-xs text-gray-500 dark:text-gray-400">Not Admitted</p><p className="text-2xl font-bold text-red-500">{stats.notAdmitted || 0}</p></div>
+          <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center"><XCircle className="text-red-500" size={20} /></div>
+        </div>
+
+        <div
+          onClick={() => { setFilterStatus(filterStatus === 'rejected' ? '' : 'rejected'); setPage(1); }}
+          className={clsx(
+            "glass-card p-4 flex items-center justify-between cursor-pointer transition-all hover:scale-[1.02] active:scale-95",
+            filterStatus === 'rejected' && "ring-2 ring-rose-500 border-transparent bg-rose-500/5"
+          )}
+        >
+          <div><p className="text-xs text-gray-500 dark:text-gray-400">Rejected</p><p className="text-2xl font-bold text-rose-500">{stats.rejected || 0}</p></div>
+          <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center"><Ban className="text-rose-500" size={20} /></div>
+        </div>
       </div>
 
       {/* Filters */}
@@ -479,12 +675,15 @@ export default function StudentRecords() {
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
             <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Search name/reg no..." className="input-field pl-9 py-2.5" />
           </div>
-          <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }} className="select-field w-36">
+          <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }} className="select-field w-44">
             <option value="">All Statuses</option>
+            <option value="admitted">Admitted</option>
             <option value="active">Active</option>
             <option value="pending">Pending</option>
             <option value="suspended">Suspended</option>
             <option value="graduated">Graduated</option>
+            <option value="not_admitted">Not Admitted / Not Accepted</option>
+            <option value="rejected">Rejected</option>
           </select>
           <select value={filterLevel} onChange={(e) => { setFilterLevel(e.target.value); setPage(1); }} className="select-field w-36">
             <option value="">All Levels</option>
@@ -551,8 +750,9 @@ export default function StudentRecords() {
                         <button onClick={() => toggleStatus(s._id)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all" title={s.status === 'active' ? 'Suspend' : 'Activate'}>
                           {s.status === 'active' ? <Ban size={14} /> : <CheckCircle size={14} />}
                         </button>
-                        <button onClick={() => openView(s)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/10 transition-all"><Eye size={14} /></button>
-                        <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all"><Pencil size={14} /></button>
+                        <button onClick={() => openView(s)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/10 transition-all" title="View Profile"><Eye size={14} /></button>
+                        <button onClick={() => openDecisionModal(s)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all" title="Send Admission Decision & PDF Card"><Send size={14} /></button>
+                        <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all" title="Edit Student"><Pencil size={14} /></button>
                         {isAdmin && (
                           <button onClick={() => setDeleteId(s._id)} className="p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"><Trash2 size={14} /></button>
                         )}
@@ -587,7 +787,26 @@ export default function StudentRecords() {
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-sm font-mono bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-gray-600 dark:text-gray-300">{viewModal.registrationNumber}</span>
                   <StatusBadge status={viewModal.status} />
+                  {viewModal.admissionDecision && (
+                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                      {viewModal.admissionDecision}
+                    </span>
+                  )}
                 </div>
+              </div>
+              <div className="shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = viewModal;
+                    setViewModal(null);
+                    openDecisionModal(target);
+                  }}
+                  className="btn-primary py-2 px-3.5 text-xs flex items-center gap-1.5 shadow-md bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-bold"
+                  title="Send Admission Decision & Download PDF Card"
+                >
+                  <Send size={13} /> Send Decision & PDF Card
+                </button>
               </div>
             </div>
 
@@ -778,10 +997,13 @@ export default function StudentRecords() {
                 <input type="date" value={form.admissionDate} onChange={e => setForm({...form, admissionDate: e.target.value})} className="input-field py-2" required /></div>
               <div><label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Status *</label>
                 <select value={form.status} onChange={e => setForm({...form, status: e.target.value as any})} className="select-field py-2">
+                  <option value="admitted">Admitted</option>
                   <option value="active">Active</option>
                   <option value="pending">Pending</option>
                   <option value="suspended">Suspended</option>
                   <option value="graduated">Graduated</option>
+                  <option value="not_admitted">Not Admitted / Not Accepted</option>
+                  <option value="rejected">Rejected</option>
                 </select></div>
             </div>
           </div>
@@ -914,6 +1136,302 @@ export default function StudentRecords() {
           <button onClick={() => handleDelete(deleteId!)} className="btn-danger flex-1 font-semibold">Delete</button>
         </div>
       </Modal>
+
+      {/* Official Admission Decision & Interactive PDF Card Modal */}
+      {decisionModalOpen && decisionStudent && (
+        <Modal
+          isOpen={decisionModalOpen}
+          onClose={() => setDecisionModalOpen(false)}
+          title="Send Admission Decision & Applicant Credentials"
+          size="xl"
+        >
+          <div className="space-y-6">
+            {/* Modal Tabs: Form vs Interactive Card Preview */}
+            <div className="flex flex-wrap items-center justify-between border-b border-gray-200 dark:border-white/10 pb-3 gap-3">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDecisionTab('form')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    decisionTab === 'form'
+                      ? 'bg-cyan-500 text-black shadow-md'
+                      : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:text-white'
+                  }`}
+                >
+                  1. Information & Decision Form
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDecisionTab('preview')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    decisionTab === 'preview'
+                      ? 'bg-cyan-500 text-black shadow-md'
+                      : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Sparkles size={13} /> 2. Interactive Card & PDF Download
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs text-gray-400 bg-white/5 px-3 py-1 rounded-lg border border-white/10">
+                <Mail size={13} className="text-cyan-400" />
+                <span>Inbox: <strong className="text-cyan-300 font-mono">{decisionForm.email || 'N/A'}</strong></span>
+              </div>
+            </div>
+
+            {decisionTab === 'form' ? (
+              <div className="space-y-5">
+                <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-4 text-xs text-gray-300 flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
+                    <Send size={16} />
+                  </div>
+                  <div>
+                    <h5 className="font-extrabold text-white text-sm">Official Admissions Notification Dispatch</h5>
+                    <p className="mt-1 leading-relaxed text-gray-300">
+                      Verify or edit the applicant details below. When you click <strong>Send to Student Email Inbox</strong>, an official notification containing the Full Name, University, Registration Number, Tracking PIN, National ID, Phone, and Admission Decision will be delivered directly to the applicant's inbox.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label text-xs font-bold">Applicant Full Name *</label>
+                    <input
+                      type="text"
+                      value={decisionForm.fullName}
+                      onChange={(e) => setDecisionForm({ ...decisionForm, fullName: e.target.value })}
+                      placeholder="e.g. Lambert BIRADUTANGAZA"
+                      className="input-field py-2 text-sm"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs font-bold">University / Institution Name *</label>
+                    <input
+                      type="text"
+                      value={decisionForm.institution}
+                      onChange={(e) => setDecisionForm({ ...decisionForm, institution: e.target.value })}
+                      placeholder="e.g. PUR (Protestant University of Rwanda)"
+                      className="input-field py-2 text-sm"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs font-bold text-emerald-400">
+                      RegNumber (Provided by University) *
+                    </label>
+                    <input
+                      type="text"
+                      value={decisionForm.registrationNumber}
+                      onChange={(e) => setDecisionForm({ ...decisionForm, registrationNumber: e.target.value })}
+                      placeholder="e.g. PUR-2026-D2C39895"
+                      className="input-field py-2 text-sm font-mono font-bold text-emerald-300 border-emerald-500/40 focus:border-emerald-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs font-bold text-cyan-400">
+                      Tracking Code or PIN *
+                    </label>
+                    <input
+                      type="text"
+                      value={decisionForm.trackingCode}
+                      onChange={(e) => setDecisionForm({ ...decisionForm, trackingCode: e.target.value })}
+                      placeholder="e.g. PUR-2026-D2C39895"
+                      className="input-field py-2 text-sm font-mono font-bold text-cyan-300 border-cyan-500/40 focus:border-cyan-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs font-bold">Applicant Email (Inbox Address) *</label>
+                    <input
+                      type="email"
+                      value={decisionForm.email}
+                      onChange={(e) => setDecisionForm({ ...decisionForm, email: e.target.value })}
+                      placeholder="e.g. lambertbiradutangaza@gmail.com"
+                      className="input-field py-2 text-sm"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs font-bold">Phone Number</label>
+                    <input
+                      type="text"
+                      value={decisionForm.phoneNumber}
+                      onChange={(e) => setDecisionForm({ ...decisionForm, phoneNumber: e.target.value })}
+                      placeholder="e.g. 0793732348"
+                      className="input-field py-2 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs font-bold">National ID / Passport Number</label>
+                    <input
+                      type="text"
+                      value={decisionForm.nationalId}
+                      onChange={(e) => setDecisionForm({ ...decisionForm, nationalId: e.target.value })}
+                      placeholder="e.g. 1200580238771025"
+                      className="input-field py-2 text-sm font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs font-bold">Academic Level</label>
+                    <input
+                      type="text"
+                      value={decisionForm.level}
+                      onChange={(e) => setDecisionForm({ ...decisionForm, level: e.target.value })}
+                      placeholder="e.g. Level 1"
+                      className="input-field py-2 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs font-bold flex items-center justify-between">
+                      <span>Admission Decision Status *</span>
+                      <span className="text-[10px] text-cyan-400 font-semibold">Updates Remarks</span>
+                    </label>
+                    <select
+                      value={decisionForm.admissionDecision}
+                      onChange={(e) => handleDecisionChange(e.target.value)}
+                      className="select-field py-2.5 text-sm font-bold"
+                    >
+                      <option value="Admitted / Accepted">Admitted / Accepted (Official Admission Offer)</option>
+                      <option value="Conditional Admission">Conditional Admission (Pending Documentation)</option>
+                      <option value="Application Under Review">Application Under Review (Pending Review)</option>
+                      <option value="Waitlisted">Waitlisted (Next Intake)</option>
+                      <option value="Not Admitted / Rejected">Not Admitted / Rejected</option>
+                      <option value="Suspended">Suspended (Academic Suspension)</option>
+                      <option value="Graduated">Graduated (Degree Awarded / Alumnus)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs font-bold flex items-center justify-between">
+                      <span>Student Record Status *</span>
+                      <span className="text-[10px] text-gray-400 font-normal">Database Status</span>
+                    </label>
+                    <select
+                      value={decisionForm.status}
+                      onChange={(e) => handleStatusChange(e.target.value as any)}
+                      className="select-field py-2.5 text-sm font-bold capitalize"
+                    >
+                      <option value="admitted">Admitted</option>
+                      <option value="active">Active</option>
+                      <option value="pending">Pending</option>
+                      <option value="suspended">Suspended</option>
+                      <option value="graduated">Graduated</option>
+                      <option value="not_admitted">Not Admitted / Not Accepted</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="form-label text-xs font-bold m-0">Admissions Remarks &amp; Campus Instructions</label>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDecisionForm((prev) => ({
+                            ...prev,
+                            remarks: getDecisionRemarks(prev.admissionDecision, prev.institution),
+                          }))
+                        }
+                        className="text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold underline"
+                        title="Reset remarks to the default template for the selected decision"
+                      >
+                        Reset to default text
+                      </button>
+                    </div>
+                    <textarea
+                      rows={3}
+                      value={decisionForm.remarks}
+                      onChange={(e) => setDecisionForm({ ...decisionForm, remarks: e.target.value })}
+                      placeholder="Enter orientation date, campus location, documents to carry, fee details, etc."
+                      className="input-field py-2 text-sm leading-relaxed"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-200 dark:border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setDecisionTab('preview')}
+                    className="btn-secondary py-2.5 px-4 text-xs font-bold flex items-center gap-1.5"
+                  >
+                    <Sparkles size={14} className="text-cyan-400" />
+                    <span>View Interactive Card & PDF</span>
+                  </button>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setDecisionModalOpen(false)}
+                      className="btn-secondary py-2.5 px-4 text-xs font-bold"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSendDecision}
+                      disabled={sendingDecision || !decisionForm.email}
+                      className="btn-primary py-2.5 px-6 text-xs font-extrabold flex items-center gap-2 shadow-lg shadow-cyan-500/25 bg-gradient-to-r from-cyan-500 via-blue-600 to-emerald-500 text-black hover:opacity-95 disabled:opacity-50"
+                    >
+                      {sendingDecision ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                          <span>Sending Email to Applicant...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send size={14} />
+                          <span>Send to Student Email Inbox</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <StudentAdmissionCard
+                  data={{
+                    ...decisionForm,
+                    admissionDate: decisionStudent.admissionDate,
+                    decisionSentAt: decisionStudent.decisionSentAt,
+                    decisionSentBy: decisionStudent.decisionSentBy,
+                  }}
+                  onSendEmail={handleSendDecision}
+                  isSendingEmail={sendingDecision}
+                />
+
+                <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setDecisionTab('form')}
+                    className="btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-1.5"
+                  >
+                    ← Back to Edit Form
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setDecisionModalOpen(false)}
+                    className="btn-secondary py-2 px-4 text-xs font-bold"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
 
     </AdminLayout>
   );
