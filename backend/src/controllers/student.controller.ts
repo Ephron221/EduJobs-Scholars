@@ -249,10 +249,11 @@ export const sendStudentDecision = async (req: Request, res: Response): Promise<
       status,
       remarks = '',
       level,
+      channel = 'email',
     } = req.body;
 
     const recipientEmail = (email || student.email || '').trim();
-    if (!recipientEmail) {
+    if (channel !== 'whatsapp' && !recipientEmail) {
       res.status(400).json({ message: 'Valid applicant email is required to send decision' });
       return;
     }
@@ -295,6 +296,14 @@ export const sendStudentDecision = async (req: Request, res: Response): Promise<
     }
 
     await student.save();
+
+    if (channel === 'whatsapp') {
+      res.json({
+        message: `Applicant credentials and admission decision updated for WhatsApp dispatch to ${phoneNumber || student.phoneNumber || 'student'}`,
+        student,
+      });
+      return;
+    }
 
     const displayFullName = fullName || `${student.firstName} ${student.lastName}`;
     const displayInstitution = institution || student.institution || 'University';
@@ -370,6 +379,79 @@ export const sendStudentDecision = async (req: Request, res: Response): Promise<
       subject = `Application Status Update: ${cleanInstitution} - ${displayFullName}`;
     }
 
+    // Build status-specific appreciation / encouragement from Mr. Esron (Application Assistant)
+    let assistantTag = 'Special Appreciation • EduJobs Scholars';
+    let assistantTitle = 'A Personal Congratulations & Thank You from Mr. Esron (Application Assistant)';
+    let assistantMessage = `Dear <strong>${displayFullName}</strong>, congratulations on your official admission offer to <strong>${cleanInstitution}</strong>! Thank you so much for putting your trust and belief in me, <strong>Mr. Esron (Application Assistant)</strong>, to handle and guide your academic application journey with <strong>EduJobs Scholars</strong>. It has been a true honor working on your behalf toward this milestone, and I celebrate your admission success! Step forward with confidence and achieve great things in your studies!`;
+    let assistantAdvice = `Keep your University Registration Number and Tracking PIN safe. Present them at the campus admissions desk or during online registration and loan application.`;
+    let assistantBg = '#f0fdfa';
+    let assistantBorder = '#2dd4bf';
+    let assistantColor = '#0d9488';
+    let assistantHeadingColor = '#134e4a';
+    let assistantTextColor = '#115e59';
+
+    if (dType === 'rejected') {
+      assistantTag = 'Heartfelt Encouragement • EduJobs Scholars';
+      assistantTitle = 'A Word of Heartfelt Encouragement from Mr. Esron (Application Assistant)';
+      assistantMessage = `Dear <strong>${displayFullName}</strong>, thank you sincerely for placing your trust and belief in me, <strong>Mr. Esron (Application Assistant)</strong>, to prepare and advocate for your application through <strong>EduJobs Scholars</strong>. While this specific university intake did not result in an offer from ${cleanInstitution}, please never give up on your academic dreams! Every challenge is a stepping stone toward a greater breakthrough. EduJobs Scholars and I remain fully committed by your side to explore new university intakes, open scholarship opportunities, and alternative academic pathways for you. Your bright future is still ahead, and we will find the right open door together!`;
+      assistantAdvice = `Don't be discouraged! EduJobs Scholars is actively processing applications for upcoming intakes, partner polytechnics, and scholarship programs. Contact Mr. Esron or reply directly to this email to apply for other open universities.`;
+      assistantBg = '#fffbeb';
+      assistantBorder = '#fcd34d';
+      assistantColor = '#d97706';
+      assistantHeadingColor = '#92400e';
+      assistantTextColor = '#78350f';
+    } else if (dType === 'conditional') {
+      assistantTag = 'Conditional Milestone • EduJobs Scholars';
+      assistantTitle = 'Next Steps & Appreciation from Mr. Esron (Application Assistant)';
+      assistantMessage = `Dear <strong>${displayFullName}</strong>, congratulations on securing your Conditional Admission Offer for <strong>${cleanInstitution}</strong>! Thank you for placing your trust and belief in me, <strong>Mr. Esron (Application Assistant)</strong>, to navigate your application with <strong>EduJobs Scholars</strong>. You are almost at the finish line—please fulfill the specified requirements or submit outstanding documents promptly, and I will be right here with you to finalize your full enrollment!`;
+      assistantAdvice = `Review the conditional remarks carefully and upload or submit the requested verification documents to secure your unconditional admission offer.`;
+      assistantBg = '#fefce8';
+      assistantBorder = '#fde047';
+      assistantColor = '#ca8a04';
+      assistantHeadingColor = '#854d0e';
+      assistantTextColor = '#713f12';
+    } else if (dType === 'waitlisted') {
+      assistantTag = 'Admissions Waitlist Update • EduJobs Scholars';
+      assistantTitle = 'Keep Hope Alive — Message from Mr. Esron (Application Assistant)';
+      assistantMessage = `Dear <strong>${displayFullName}</strong>, thank you for placing your trust and belief in me, <strong>Mr. Esron (Application Assistant)</strong>, throughout your EduJobs Scholars application. Being placed on the official waitlist for ${cleanInstitution} is proof of your strong academic merit. Keep hope alive! Admissions lists update regularly as seats open, and I am continuously monitoring your status while keeping open backup opportunities ready for you!`;
+      assistantAdvice = `Stay reachable on phone and email. As university slots open during orientation and registration, waitlisted applicants are prioritized for confirmation.`;
+      assistantBg = '#eff6ff';
+      assistantBorder = '#93c5fd';
+      assistantColor = '#2563eb';
+      assistantHeadingColor = '#1e40af';
+      assistantTextColor = '#1e3a8a';
+    } else if (dType === 'pending') {
+      assistantTag = 'Review In Progress • EduJobs Scholars';
+      assistantTitle = 'Application Progress Update from Mr. Esron (Application Assistant)';
+      assistantMessage = `Dear <strong>${displayFullName}</strong>, thank you for placing your trust and belief in me, <strong>Mr. Esron (Application Assistant)</strong>, to manage your application with EduJobs Scholars. Your file is actively under thorough evaluation by the admissions committee for ${cleanInstitution}. I am following up closely on your file every step of the way, so stay optimistic while we await the final official decision!`;
+      assistantAdvice = `Ensure all your contact details and academic certificates are up to date. We will notify you immediately once the admissions board concludes review.`;
+      assistantBg = '#f0f9ff';
+      assistantBorder = '#7dd3fc';
+      assistantColor = '#0284c7';
+      assistantHeadingColor = '#0369a1';
+      assistantTextColor = '#075985';
+    } else if (dType === 'suspended') {
+      assistantTag = 'Academic Support Notice • EduJobs Scholars';
+      assistantTitle = 'Important Support Note from Mr. Esron (Application Assistant)';
+      assistantMessage = `Dear <strong>${displayFullName}</strong>, thank you for working with EduJobs Scholars. Regarding your current status update at ${cleanInstitution}, please remember that academic setbacks can be addressed through proper institutional procedures. I, <strong>Mr. Esron (Application Assistant)</strong>, along with EduJobs Scholars, stand ready to help guide you through the review, appeal, or reinstatement process.`;
+      assistantAdvice = `Contact the admissions and guidance office immediately to discuss remedies, clearance, or academic appeals.`;
+      assistantBg = '#fff1f2';
+      assistantBorder = '#fda4af';
+      assistantColor = '#e11d48';
+      assistantHeadingColor = '#9f1239';
+      assistantTextColor = '#881337';
+    } else if (dType === 'graduated') {
+      assistantTag = 'Alumni Achievement • EduJobs Scholars';
+      assistantTitle = 'Graduation Honors & Celebration from Mr. Esron (Application Assistant)';
+      assistantMessage = `Dear <strong>${displayFullName}</strong>, what an incredible academic milestone! Huge congratulations on officially graduating from <strong>${cleanInstitution}</strong>! Thank you for allowing me, <strong>Mr. Esron (Application Assistant)</strong>, and EduJobs Scholars to be part of your educational journey. Wishing you abundant career breakthroughs, impactful leadership, and endless opportunities ahead!`;
+      assistantAdvice = `Visit the EduJobs Scholars Jobs portal to explore graduate jobs, internships, and professional career placement programs.`;
+      assistantBg = '#faf5ff';
+      assistantBorder = '#d8b4fe';
+      assistantColor = '#9333ea';
+      assistantHeadingColor = '#6b21a8';
+      assistantTextColor = '#581c87';
+    }
+
     // High Deliverability, Anti-Spam Clean Institutional HTML Email Template
     const html = `
     <!DOCTYPE html>
@@ -418,6 +500,26 @@ export const sendStudentDecision = async (req: Request, res: Response): Promise<
                   <p style="margin: 0;">
                     ${introText}
                   </p>
+                </td>
+              </tr>
+
+              <!-- Interactive Appreciation / Encouragement Note from Mr. Esron Application Assistant -->
+              <tr>
+                <td style="padding: 0 24px 18px 24px;">
+                  <div style="background-color: ${assistantBg}; border: 1.5px solid ${assistantBorder}; border-radius: 10px; padding: 16px 18px;">
+                    <div style="font-size: 11px; font-weight: 800; color: ${assistantColor}; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px;">
+                      ${assistantTag}
+                    </div>
+                    <div style="font-size: 15px; font-weight: 800; color: ${assistantHeadingColor}; margin-bottom: 6px;">
+                      ${assistantTitle}
+                    </div>
+                    <div style="font-size: 13.5px; color: ${assistantTextColor}; line-height: 1.6; margin-bottom: 8px;">
+                      ${assistantMessage}
+                    </div>
+                    <div style="font-size: 12px; color: ${assistantHeadingColor}; font-weight: 600; padding-top: 8px; border-top: 1px dashed ${assistantBorder};">
+                      <strong>Recommended Next Step:</strong> ${assistantAdvice}
+                    </div>
+                  </div>
                 </td>
               </tr>
 
@@ -543,7 +645,7 @@ export const sendStudentDecision = async (req: Request, res: Response): Promise<
     `;
 
     // Matched plain text alternative for high spam-filter deliverability
-    const plainTextMessage = `Dear ${displayFullName},\n\n${introText.replace(/<[^>]+>/g, '')}\n\nDECISION STATUS: ${decisionTitle.toUpperCase()}\nSTUDENT RECORD STATUS: ${displayStatus}\n\nAPPLICANT CREDENTIALS:\n- Full Name: ${displayFullName}\n- University / Institution: ${cleanInstitution}\n- University Reg Number: ${displayRegNo}\n- Tracking Code / PIN: ${displayTrackingPin}\n- National ID / Passport: ${displayNationalId}\n- Academic Level: ${displayLevel}\n- Contact Phone: ${displayPhone}\n- Registered Email: ${recipientEmail}\n\n${remarks ? `INSTRUCTIONS & NEXT STEPS:\n${remarks}\n\n` : ''}Access the EduJobs Scholars student portal to download your official PDF card: ${process.env.FRONTEND_URL || 'https://edujobsscholars.vercel.app'}/login\n\nPlease present your Registration Number (${displayRegNo}) and Tracking PIN when reporting to ${cleanInstitution}.\n\nDispatched on behalf of: ${senderName}\nEduJobs Scholars Admissions & Records Directorate, Kigali, Rwanda\nIf you have questions, please reply directly to this email.`;
+    const plainTextMessage = `Dear ${displayFullName},\n\n${introText.replace(/<[^>]+>/g, '')}\n\n${assistantTitle.toUpperCase()}:\n"${assistantMessage.replace(/<[^>]+>/g, '')}"\nRecommended Next Step: ${assistantAdvice}\n\nDECISION STATUS: ${decisionTitle.toUpperCase()}\nSTUDENT RECORD STATUS: ${displayStatus}\n\nAPPLICANT CREDENTIALS:\n- Full Name: ${displayFullName}\n- University / Institution: ${cleanInstitution}\n- University Reg Number: ${displayRegNo}\n- Tracking Code / PIN: ${displayTrackingPin}\n- National ID / Passport: ${displayNationalId}\n- Academic Level: ${displayLevel}\n- Contact Phone: ${displayPhone}\n- Registered Email: ${recipientEmail}\n\n${remarks ? `INSTRUCTIONS & NEXT STEPS:\n${remarks}\n\n` : ''}Access the EduJobs Scholars student portal to view credentials & download official PDF card: ${process.env.FRONTEND_URL || 'https://edujobsscholars.vercel.app'}/login\n\nPlease present your Registration Number (${displayRegNo}) and Tracking PIN when reporting to ${cleanInstitution}.\n\nDispatched on behalf of: Mr. Esron (Application Assistant) & ${senderName}\nEduJobs Scholars Admissions & Records Directorate, Kigali, Rwanda\nIf you have questions, please reply directly to this email.`;
 
     await sendEmail({
       email: recipientEmail,
@@ -553,7 +655,10 @@ export const sendStudentDecision = async (req: Request, res: Response): Promise<
     });
 
     res.json({
-      message: `Applicant information & admission decision sent successfully to ${recipientEmail}`,
+      message:
+        channel === 'both'
+          ? `Decision dispatched to ${recipientEmail} and student record prepared for WhatsApp`
+          : `Applicant information & admission decision sent successfully to ${recipientEmail}`,
       student,
     });
   } catch (error: any) {

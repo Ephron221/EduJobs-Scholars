@@ -63,13 +63,258 @@ export interface AdmissionCardData {
   decisionSentBy?: string;
 }
 
+export const WhatsAppIcon = ({ size = 15, className = '' }: { size?: number; className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+    <path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" />
+    <path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" />
+  </svg>
+);
+
+export const formatWhatsAppNumber = (phone: string = ''): string => {
+  let clean = phone.replace(/[^0-9]/g, '');
+  if (!clean) return '';
+  if (clean.startsWith('07') && clean.length === 10) {
+    clean = '250' + clean.slice(1);
+  } else if (clean.startsWith('7') && clean.length === 9) {
+    clean = '250' + clean;
+  }
+  return clean;
+};
+
+export interface AssistantAppreciationData {
+  tag: string;
+  title: string;
+  message: string;
+  advice: string;
+  badgeEmoji: string;
+  accentColor: string;
+  bgClass: string;
+  borderClass: string;
+  textClass: string;
+  pdfBg: string;
+  pdfBorder: string;
+  pdfText: string;
+  emoji: string;
+}
+
+export const getAssistantAppreciation = (
+  rawDecision: string = '',
+  fullName: string = 'Applicant',
+  institution: string = 'University'
+): AssistantAppreciationData => {
+  const dType = resolveDecisionType(rawDecision);
+  const name = fullName.trim() || 'Applicant';
+  const inst = institution.trim() || 'the University';
+
+  switch (dType) {
+    case 'rejected':
+      return {
+        tag: 'Heartfelt Encouragement • EduJobs Scholars',
+        title: 'A Word of Heartfelt Encouragement from Mr. Esron (Application Assistant)',
+        message: `Dear ${name}, thank you sincerely for placing your trust and belief in me, Mr. Esron (Application Assistant), to prepare and advocate for your application through EduJobs Scholars. While this specific university intake did not result in an offer from ${inst}, please never give up on your academic dreams! Every challenge is a stepping stone toward a greater breakthrough. EduJobs Scholars and I remain fully committed by your side to explore new university intakes, open scholarship opportunities, and alternative academic pathways for you. Your bright future is still ahead, and we will find the right open door together!`,
+        advice: `Don't be discouraged! EduJobs Scholars is actively processing applications for upcoming intakes, partner polytechnics, and scholarship programs. Contact Mr. Esron or reply here right away to apply for other open universities.`,
+        badgeEmoji: '❌',
+        accentColor: '#f59e0b',
+        bgClass: 'bg-gradient-to-r from-amber-950/40 via-rose-950/30 to-amber-950/40',
+        borderClass: 'border-amber-500/40 hover:border-amber-400/60 shadow-amber-950/30',
+        textClass: 'text-amber-200',
+        pdfBg: '#fffbeb',
+        pdfBorder: '#fcd34d',
+        pdfText: '#92400e',
+        emoji: '💪',
+      };
+    case 'conditional':
+      return {
+        tag: 'Conditional Milestone • EduJobs Scholars',
+        title: 'Next Steps & Appreciation from Mr. Esron (Application Assistant)',
+        message: `Dear ${name}, congratulations on securing your Conditional Admission Offer for ${inst}! Thank you for placing your trust and belief in me, Mr. Esron (Application Assistant), to navigate your application with EduJobs Scholars. You are almost at the finish line—please fulfill the specified requirements or submit outstanding documents promptly, and I will be right here with you to finalize your full enrollment!`,
+        advice: `Review the conditional remarks carefully and upload or submit the requested verification documents to secure your unconditional admission offer.`,
+        badgeEmoji: '⚠️',
+        accentColor: '#eab308',
+        bgClass: 'bg-gradient-to-r from-amber-950/40 via-yellow-950/30 to-amber-950/40',
+        borderClass: 'border-yellow-500/40 hover:border-yellow-400/60 shadow-yellow-950/30',
+        textClass: 'text-yellow-200',
+        pdfBg: '#fefce8',
+        pdfBorder: '#fde047',
+        pdfText: '#854d0e',
+        emoji: '⭐',
+      };
+    case 'waitlisted':
+      return {
+        tag: 'Admissions Waitlist Update • EduJobs Scholars',
+        title: 'Keep Hope Alive — Message from Mr. Esron (Application Assistant)',
+        message: `Dear ${name}, thank you for placing your trust and belief in me, Mr. Esron (Application Assistant), throughout your EduJobs Scholars application. Being placed on the official waitlist for ${inst} is proof of your strong academic merit. Keep hope alive! Admissions lists update regularly as seats open, and I am continuously monitoring your status while keeping open backup opportunities ready for you!`,
+        advice: `Stay reachable on phone and email. As university slots open during orientation and registration, waitlisted applicants are prioritized for confirmation.`,
+        badgeEmoji: '⏳',
+        accentColor: '#38bdf8',
+        bgClass: 'bg-gradient-to-r from-blue-950/40 via-cyan-950/30 to-blue-950/40',
+        borderClass: 'border-blue-500/40 hover:border-blue-400/60 shadow-blue-950/30',
+        textClass: 'text-blue-200',
+        pdfBg: '#eff6ff',
+        pdfBorder: '#93c5fd',
+        pdfText: '#1e40af',
+        emoji: '⏳',
+      };
+    case 'pending':
+      return {
+        tag: 'Review In Progress • EduJobs Scholars',
+        title: 'Application Progress Update from Mr. Esron (Application Assistant)',
+        message: `Dear ${name}, thank you for placing your trust and belief in me, Mr. Esron (Application Assistant), to manage your application with EduJobs Scholars. Your file is actively under thorough evaluation by the admissions committee for ${inst}. I am following up closely on your file every step of the way, so stay optimistic while we await the final official decision!`,
+        advice: `Ensure all your contact details and academic certificates are up to date. We will notify you immediately once the admissions board concludes review.`,
+        badgeEmoji: '📋',
+        accentColor: '#06b6d4',
+        bgClass: 'bg-gradient-to-r from-cyan-950/40 via-sky-950/30 to-cyan-950/40',
+        borderClass: 'border-cyan-500/40 hover:border-cyan-400/60 shadow-cyan-950/30',
+        textClass: 'text-cyan-200',
+        pdfBg: '#f0f9ff',
+        pdfBorder: '#7dd3fc',
+        pdfText: '#0369a1',
+        emoji: '📋',
+      };
+    case 'suspended':
+      return {
+        tag: 'Academic Support Notice • EduJobs Scholars',
+        title: 'Important Support Note from Mr. Esron (Application Assistant)',
+        message: `Dear ${name}, thank you for working with EduJobs Scholars. Regarding your current status update at ${inst}, please remember that academic setbacks can be addressed through proper institutional procedures. I, Mr. Esron (Application Assistant), along with EduJobs Scholars, stand ready to help guide you through the review, appeal, or reinstatement process.`,
+        advice: `Contact the admissions and guidance office immediately to discuss remedies, clearance, or academic appeals.`,
+        badgeEmoji: '🚫',
+        accentColor: '#f43f5e',
+        bgClass: 'bg-gradient-to-r from-rose-950/40 via-red-950/30 to-rose-950/40',
+        borderClass: 'border-rose-500/40 hover:border-rose-400/60 shadow-rose-950/30',
+        textClass: 'text-rose-200',
+        pdfBg: '#fff1f2',
+        pdfBorder: '#fda4af',
+        pdfText: '#9f1239',
+        emoji: '⚠️',
+      };
+    case 'graduated':
+      return {
+        tag: 'Alumni Achievement • EduJobs Scholars',
+        title: 'Graduation Honors & Celebration from Mr. Esron (Application Assistant)',
+        message: `Dear ${name}, what an incredible academic milestone! Huge congratulations on officially graduating from ${inst}! Thank you for allowing me, Mr. Esron (Application Assistant), and EduJobs Scholars to be part of your educational journey. Wishing you abundant career breakthroughs, impactful leadership, and endless opportunities ahead!`,
+        advice: `Visit the EduJobs Scholars Jobs portal to explore graduate jobs, internships, and professional career placement programs.`,
+        badgeEmoji: '🎓',
+        accentColor: '#c084fc',
+        bgClass: 'bg-gradient-to-r from-purple-950/40 via-fuchsia-950/30 to-purple-950/40',
+        borderClass: 'border-purple-500/40 hover:border-purple-400/60 shadow-purple-950/30',
+        textClass: 'text-purple-200',
+        pdfBg: '#faf5ff',
+        pdfBorder: '#d8b4fe',
+        pdfText: '#6b21a8',
+        emoji: '🎓',
+      };
+    case 'admitted':
+    default:
+      return {
+        tag: 'Special Appreciation • EduJobs Scholars',
+        title: 'A Personal Congratulations & Thank You from Mr. Esron (Application Assistant)',
+        message: `Dear ${name}, congratulations on your official admission offer to ${inst}! Thank you so much for putting your trust and belief in me, Mr. Esron (Application Assistant), to handle and prepare your application with EduJobs Scholars. It has been a true honor working on your behalf toward this milestone, and I celebrate your admission success! Step forward with confidence and achieve greatness in your studies!`,
+        advice: `Keep your University Registration Number and Tracking PIN safe. Present them at the campus admissions desk or during online registration and loan application.`,
+        badgeEmoji: '✅',
+        accentColor: '#10b981',
+        bgClass: 'bg-gradient-to-r from-teal-950/40 via-cyan-950/30 to-emerald-950/40',
+        borderClass: 'border-teal-500/40 hover:border-teal-400/60 shadow-teal-950/30',
+        textClass: 'text-teal-200',
+        pdfBg: '#f0fdf4',
+        pdfBorder: '#86efac',
+        pdfText: '#15803d',
+        emoji: '🎉',
+      };
+  }
+};
+
+export const buildWhatsAppAdmissionMessage = (data: AdmissionCardData): string => {
+  const decisionUpper = (data.admissionDecision || 'Admitted').toUpperCase();
+  const statusUpper = (data.status || 'Admitted').toUpperCase();
+  const portalUrl = 'https://edujobsscholars.vercel.app/login';
+  const cleanInstitution = (data.institution || 'University').replace(/\s*\([^)]*\d+[^)]*\)/g, '').trim() || data.institution;
+  const app = getAssistantAppreciation(data.admissionDecision, data.fullName, cleanInstitution);
+
+  const divider = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+
+  return (
+    `${divider}\n` +
+    `🎓 *EDUJOBS SCHOLARS ADMISSIONS AUTHORITY*\n` +
+    `🏛️ *Official Academic Admissions Directorate • Kigali, Rwanda*\n` +
+    `${divider}\n\n` +
+    `Dear *${data.fullName}*,\n\n` +
+    `We are writing to officially communicate your application outcome:\n` +
+    `▸ *Decision Outcome:* ${app.badgeEmoji} *${decisionUpper}*\n` +
+    `▸ *Record Status:* *${statusUpper}*\n` +
+    `▸ *Target Institution:* *${cleanInstitution}*\n\n` +
+    `${divider}\n` +
+    `${app.emoji} *${app.title.toUpperCase()}*\n` +
+    `_${app.tag}_\n` +
+    `${divider}\n\n` +
+    `> _"${app.message}"_\n\n` +
+    `${divider}\n` +
+    `📋 *OFFICIAL APPLICANT CREDENTIALS*\n` +
+    `${divider}\n` +
+    `• *Full Name:* *${data.fullName}*\n` +
+    `• *University / Institution:* *${cleanInstitution}*\n` +
+    `• *University Reg Number:* \`\`\`${data.registrationNumber || 'Pending University Issuance'}\`\`\` 🔑\n` +
+    `• *Tracking Code / PIN:* \`\`\`${data.trackingCode || 'N/A'}\`\`\` 🔒\n` +
+    `• *Academic Level:* *${data.level || 'Level 1'}*\n` +
+    `• *National ID / Passport:* *${data.nationalId || 'N/A'}*\n` +
+    `• *Registered Email:* _${data.email || 'N/A'}_\n` +
+    `• *Contact Phone:* _${data.phoneNumber || 'N/A'}_\n\n` +
+    (data.remarks
+      ? `${divider}\n` +
+        `📝 *CAMPUS INSTRUCTIONS & REMARKS*\n` +
+        `${divider}\n` +
+        `${data.remarks}\n\n`
+      : '') +
+    `${divider}\n` +
+    `💡 *RECOMMENDED NEXT STEPS*\n` +
+    `${divider}\n` +
+    `${app.advice}\n\n` +
+    `${divider}\n` +
+    `🌐 *STUDENT PORTAL & ONLINE CREDENTIAL CARD*\n` +
+    `${divider}\n` +
+    `Access your official online card, download your verified printable PDF, and track ongoing updates:\n` +
+    `👉 *${portalUrl}*\n\n` +
+    `${divider}\n` +
+    `💬 *DIRECT ASSISTANCE & INQUIRIES*\n` +
+    `Have questions or need guidance regarding this admission outcome?\n` +
+    `Reply directly to this WhatsApp message or connect with:\n` +
+    `👨‍💼 *Mr. Esron (Application Assistant)*\n` +
+    `🏢 *EduJobs Scholars Admissions Directorate*\n` +
+    `📍 _Kigali, Rwanda • Empowering Future Scholars_\n` +
+    `${divider}`
+  );
+};
+
 interface Props {
   data: AdmissionCardData;
   onSendEmail?: () => void;
   isSendingEmail?: boolean;
+  onSendWhatsApp?: () => void;
+  isSendingWhatsApp?: boolean;
+  onSendBoth?: () => void;
+  isSendingBoth?: boolean;
 }
 
-export default function StudentAdmissionCard({ data, onSendEmail, isSendingEmail }: Props) {
+export default function StudentAdmissionCard({
+  data,
+  onSendEmail,
+  isSendingEmail,
+  onSendWhatsApp,
+  isSendingWhatsApp,
+  onSendBoth,
+  isSendingBoth,
+}: Props) {
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const copyToClipboard = (text: string, label: string) => {
@@ -166,6 +411,7 @@ export default function StudentAdmissionCard({ data, onSendEmail, isSendingEmail
   };
 
   const badge = getDecisionBadge();
+  const app = getAssistantAppreciation(data.admissionDecision, data.fullName, data.institution);
   const initials = data.fullName
     ? data.fullName
         .split(' ')
@@ -188,6 +434,7 @@ export default function StudentAdmissionCard({ data, onSendEmail, isSendingEmail
     const decisionTextColor = badge.pdfText;
     const decisionBorderColor = badge.pdfBorder;
     const displayDecisionText = badge.text;
+    const pdfApp = getAssistantAppreciation(data.admissionDecision, data.fullName, data.institution);
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -198,70 +445,75 @@ export default function StudentAdmissionCard({ data, onSendEmail, isSendingEmail
         <style>
           @page {
             size: A4 portrait;
-            margin: 12mm 15mm;
+            margin: 6mm 10mm;
           }
           * {
             box-sizing: border-box;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            background: #ffffff;
-            color: #0f172a;
+          html, body {
             margin: 0;
             padding: 0;
+            background: #ffffff;
+            color: #0f172a;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           .pdf-sheet {
-            max-width: 800px;
+            max-width: 780px;
             margin: 0 auto;
             border: 2px solid #0f172a;
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            box-shadow: none;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
           .pdf-header {
             background: #0f2744;
             color: #ffffff;
-            padding: 26px 32px;
+            padding: 12px 20px 10px 20px;
             text-align: center;
-            border-bottom: 3px solid #0284c7;
+            border-bottom: 2.5px solid #0284c7;
           }
           .badge-pill {
             display: inline-block;
             background: rgba(255, 255, 255, 0.15);
             border: 1px solid rgba(255, 255, 255, 0.3);
             color: #7dd3fc;
-            padding: 4px 14px;
+            padding: 2px 10px;
             border-radius: 9999px;
-            font-size: 11px;
+            font-size: 9.5px;
             font-weight: 800;
-            letter-spacing: 1.5px;
+            letter-spacing: 1.2px;
             text-transform: uppercase;
-            margin-bottom: 8px;
+            margin-bottom: 3px;
           }
           .pdf-header h1 {
             margin: 0;
-            font-size: 24px;
+            font-size: 19px;
             font-weight: 900;
             letter-spacing: -0.5px;
+            line-height: 1.2;
           }
           .pdf-header p {
-            margin: 4px 0 0 0;
+            margin: 2px 0 0 0;
             color: #cbd5e1;
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 500;
           }
           .institution-banner {
             background: #f8fafc;
-            padding: 14px 32px;
+            padding: 7px 20px;
             border-bottom: 1px solid #cbd5e1;
             display: flex;
             justify-content: space-between;
             align-items: center;
           }
           .institution-name {
-            font-size: 17px;
+            font-size: 13.5px;
             font-weight: 800;
             color: #0369a1;
           }
@@ -269,60 +521,61 @@ export default function StudentAdmissionCard({ data, onSendEmail, isSendingEmail
             background: ${decisionBgColor};
             border: 1.5px solid ${decisionBorderColor};
             color: ${decisionTextColor};
-            padding: 5px 16px;
+            padding: 3px 12px;
             border-radius: 9999px;
             font-weight: 800;
-            font-size: 12px;
+            font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
+            letter-spacing: 0.6px;
           }
           .body-content {
-            padding: 24px 32px;
+            padding: 12px 20px 8px 20px;
           }
           .student-banner {
             display: flex;
             align-items: center;
-            gap: 18px;
-            padding-bottom: 18px;
+            gap: 12px;
+            padding-bottom: 8px;
             border-bottom: 1.5px dashed #cbd5e1;
-            margin-bottom: 20px;
+            margin-bottom: 9px;
           }
           .avatar-circle {
-            width: 58px;
-            height: 58px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             background: #0284c7;
             color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            font-size: 15px;
             font-weight: 900;
             flex-shrink: 0;
           }
           .student-name {
-            font-size: 20px;
+            font-size: 15px;
             font-weight: 900;
             color: #0f172a;
             margin: 0;
+            line-height: 1.2;
           }
           .student-sub {
             color: #64748b;
-            font-size: 12px;
-            margin: 4px 0 0 0;
+            font-size: 10px;
+            margin: 2px 0 0 0;
             font-weight: 600;
           }
           .credentials-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 14px;
-            margin-bottom: 20px;
+            gap: 8px;
+            margin-bottom: 9px;
           }
           .cred-box {
             background: #f8fafc;
             border: 1.5px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 12px 16px;
+            border-radius: 7px;
+            padding: 6px 10px;
           }
           .cred-box.highlight-reg {
             background: #f0fdf4;
@@ -333,17 +586,17 @@ export default function StudentAdmissionCard({ data, onSendEmail, isSendingEmail
             border-color: #7dd3fc;
           }
           .cred-label {
-            font-size: 10px;
+            font-size: 8.5px;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
+            letter-spacing: 0.6px;
             color: #64748b;
-            margin-bottom: 4px;
+            margin-bottom: 1px;
           }
           .cred-box.highlight-reg .cred-label { color: #166534; }
           .cred-box.highlight-pin .cred-label { color: #0369a1; }
           .cred-val {
-            font-size: 16px;
+            font-size: 13px;
             font-weight: 900;
             color: #0f172a;
             font-family: 'Courier New', Courier, monospace;
@@ -353,11 +606,11 @@ export default function StudentAdmissionCard({ data, onSendEmail, isSendingEmail
           .info-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
-            font-size: 13px;
+            margin-bottom: 9px;
+            font-size: 10.5px;
           }
           .info-table td {
-            padding: 9px 12px;
+            padding: 4px 6px;
             border-bottom: 1px solid #e2e8f0;
           }
           .info-table td:first-child {
@@ -372,40 +625,40 @@ export default function StudentAdmissionCard({ data, onSendEmail, isSendingEmail
           .remarks-box {
             background: #fffbeb;
             border: 1px solid #fde68a;
-            border-radius: 10px;
-            padding: 14px 18px;
-            margin-bottom: 20px;
+            border-radius: 7px;
+            padding: 7px 10px;
+            margin-bottom: 9px;
           }
           .remarks-title {
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 800;
             color: #92400e;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 4px;
+            letter-spacing: 0.6px;
+            margin-bottom: 2px;
           }
           .remarks-body {
-            font-size: 12.5px;
+            font-size: 10px;
             color: #78350f;
-            line-height: 1.5;
+            line-height: 1.35;
             white-space: pre-line;
           }
           .footer-section {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-top: 16px;
+            padding-top: 7px;
             border-top: 1.5px dashed #cbd5e1;
-            font-size: 11px;
+            font-size: 9px;
             color: #64748b;
           }
           .security-barcode {
             font-family: 'Courier New', monospace;
-            font-size: 11px;
-            letter-spacing: 3px;
+            font-size: 9px;
+            letter-spacing: 2px;
             font-weight: 900;
             color: #0f172a;
-            padding: 3px 6px;
+            padding: 2px 4px;
             border: 1px solid #cbd5e1;
             background: #f8fafc;
             border-radius: 4px;
@@ -416,9 +669,22 @@ export default function StudentAdmissionCard({ data, onSendEmail, isSendingEmail
           .stamp-box .seal {
             font-weight: 900;
             color: #0369a1;
-            font-size: 11px;
+            font-size: 9px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.8px;
+          }
+          @media print {
+            html, body {
+              height: 100%;
+              overflow: hidden;
+            }
+            .pdf-sheet {
+              box-shadow: none !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+              page-break-after: avoid !important;
+              break-after: avoid !important;
+            }
           }
         </style>
       </head>
@@ -491,10 +757,26 @@ export default function StudentAdmissionCard({ data, onSendEmail, isSendingEmail
             </div>
             ` : ''}
 
+            <!-- Personal Appreciation / Encouragement from Mr. Esron Application Assistant -->
+            <div style="background: ${pdfApp.pdfBg}; border: 1.5px solid ${pdfApp.pdfBorder}; border-radius: 7px; padding: 7px 10px; margin-bottom: 9px;">
+              <div style="font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; color: ${pdfApp.pdfText}; margin-bottom: 2px;">
+                ${pdfApp.tag}
+              </div>
+              <div style="font-size: 10.5px; font-weight: 800; color: ${pdfApp.pdfText}; margin-bottom: 2px;">
+                ${pdfApp.title}
+              </div>
+              <div style="font-size: 9.5px; color: #1e293b; line-height: 1.35; font-style: italic; margin-bottom: 3px;">
+                &ldquo;${pdfApp.message}&rdquo;
+              </div>
+              <div style="font-size: 9px; color: ${pdfApp.pdfText}; font-weight: 600; padding-top: 3px; border-top: 1px dashed ${pdfApp.pdfBorder};">
+                <strong>Recommended Next Step:</strong> ${pdfApp.advice}
+              </div>
+            </div>
+
             <div class="footer-section">
               <div>
                 <div class="security-barcode">||| | |||| | ||| || ||||</div>
-                <div style="margin-top: 4px;">VERIFIED ID: ${data.registrationNumber || 'EJS-2026'} &bull; Issued: ${new Date().toLocaleDateString()}</div>
+                <div style="margin-top: 3px;">VERIFIED ID: ${data.registrationNumber || 'EJS-2026'} &bull; Issued: ${new Date().toLocaleDateString()}</div>
               </div>
               <div class="stamp-box">
                 <div class="seal">&#10003; OFFICIALLY CERTIFIED</div>
@@ -519,9 +801,39 @@ export default function StudentAdmissionCard({ data, onSendEmail, isSendingEmail
     printWindow.document.close();
   };
 
+  const handleSendWhatsAppInternal = () => {
+    if (onSendWhatsApp) {
+      onSendWhatsApp();
+      return;
+    }
+
+    if (!data.phoneNumber || !data.phoneNumber.trim()) {
+      toast.error('Applicant phone number is missing! Please enter a phone number in the form.');
+      return;
+    }
+
+    const cleanNumber = formatWhatsAppNumber(data.phoneNumber);
+    if (!cleanNumber || cleanNumber.length < 8) {
+      toast.error('Please enter a valid phone number (e.g. +250 788 123 456).');
+      return;
+    }
+
+    // Build the formatted WhatsApp message with Mr. Esron's note & credentials
+    const msg = buildWhatsAppAdmissionMessage(data);
+    const waUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(msg)}`;
+
+    // Open WhatsApp Web / App directly in a new tab without requiring a download popup
+    window.open(waUrl, '_blank');
+
+    toast.success(
+      `WhatsApp opened directly for +${cleanNumber}! Click Send in WhatsApp to deliver credentials.`,
+      { duration: 6000 }
+    );
+  };
+
   return (
     <div className="space-y-4">
-      {/* Top Action Bar with Download PDF, Copy, and Send Email */}
+      {/* Top Action Bar with Download PDF, Copy, WhatsApp, and Send Email */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-gray-900/80 border border-white/10 backdrop-blur-md">
         <div className="flex items-center gap-2">
           <span className="flex h-2.5 w-2.5 rounded-full bg-cyan-400 animate-pulse" />
@@ -554,6 +866,16 @@ export default function StudentAdmissionCard({ data, onSendEmail, isSendingEmail
             <span>Copy All</span>
           </button>
 
+          <button
+            onClick={handleSendWhatsAppInternal}
+            disabled={isSendingWhatsApp}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-black font-extrabold text-xs shadow-lg shadow-[#25D366]/25 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+            title="Send credentials directly to applicant's WhatsApp without downloading"
+          >
+            <WhatsAppIcon size={14} />
+            <span>{isSendingWhatsApp ? 'Opening WhatsApp...' : 'Send to WhatsApp'}</span>
+          </button>
+
           {onSendEmail && (
             <button
               onClick={onSendEmail}
@@ -563,6 +885,21 @@ export default function StudentAdmissionCard({ data, onSendEmail, isSendingEmail
             >
               <Mail size={14} />
               <span>{isSendingEmail ? 'Sending Email...' : 'Send to Student Email'}</span>
+            </button>
+          )}
+
+          {onSendBoth && (
+            <button
+              onClick={onSendBoth}
+              disabled={isSendingBoth}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-black font-extrabold text-xs shadow-lg shadow-teal-500/25 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+              title="Dispatch credentials to both applicant's Email inbox and WhatsApp directly"
+            >
+              <div className="flex items-center gap-1">
+                <Mail size={13} />
+                <WhatsAppIcon size={13} />
+              </div>
+              <span>{isSendingBoth ? 'Sending Both...' : 'Send to Both (Email & WhatsApp)'}</span>
             </button>
           )}
         </div>
@@ -766,6 +1103,28 @@ export default function StudentAdmissionCard({ data, onSendEmail, isSendingEmail
               <p className="whitespace-pre-line leading-relaxed opacity-95">{data.remarks}</p>
             </div>
           )}
+        </div>
+
+        {/* Interactive Appreciation / Encouragement Note from Mr. Esron Application Assistant */}
+        <div
+          className={`relative z-10 mt-6 rounded-2xl border ${app.borderClass} ${app.bgClass} p-4 sm:p-5 backdrop-blur-md transition-all shadow-lg`}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <span className="flex h-2.5 w-2.5 rounded-full animate-ping" style={{ backgroundColor: app.accentColor }} />
+            <span className="text-[10px] font-extrabold uppercase tracking-widest" style={{ color: app.accentColor }}>
+              {app.tag}
+            </span>
+          </div>
+          <div className="text-sm sm:text-base font-extrabold" style={{ color: app.accentColor }}>
+            {app.title}
+          </div>
+          <p className="mt-1.5 text-xs sm:text-sm text-gray-200 leading-relaxed italic">
+            "{app.message}"
+          </p>
+          <div className="mt-3 pt-2.5 border-t border-white/10 flex flex-wrap items-center gap-2 text-xs text-gray-300">
+            <span className="font-bold text-white">💡 Recommended Next Step:</span>
+            <span>{app.advice}</span>
+          </div>
         </div>
 
         {/* Card Footer Bar */}

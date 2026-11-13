@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { getAssetUrl } from '../../utils/assetUrl';
 import clsx from 'clsx';
-import StudentAdmissionCard, { resolveDecisionType } from '../../components/StudentAdmissionCard';
+import StudentAdmissionCard, { resolveDecisionType, WhatsAppIcon, formatWhatsAppNumber, buildWhatsAppAdmissionMessage } from '../../components/StudentAdmissionCard';
 
 interface StudentDocument {
   name: string;
@@ -187,6 +187,8 @@ export default function StudentRecords() {
     level: 'Level 1',
   });
   const [sendingDecision, setSendingDecision] = useState(false);
+  const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
+  const [sendingBoth, setSendingBoth] = useState(false);
   const [decisionTab, setDecisionTab] = useState<'form' | 'preview'>('form');
 
   const openDecisionModal = (s: Student) => {
@@ -281,6 +283,92 @@ export default function StudentRecords() {
       toast.error(err.response?.data?.message || 'Failed to send applicant decision email');
     } finally {
       setSendingDecision(false);
+    }
+  };
+
+  const handleSendWhatsApp = async () => {
+    if (!decisionStudent) return;
+    if (!decisionForm.phoneNumber || !decisionForm.phoneNumber.trim()) {
+      toast.error('Applicant phone number is required to send via WhatsApp');
+      return;
+    }
+    const cleanNumber = formatWhatsAppNumber(decisionForm.phoneNumber);
+    if (!cleanNumber || cleanNumber.length < 8) {
+      toast.error('Please enter a valid phone number (e.g. 078... or +250 788 123 456)');
+      return;
+    }
+
+    setSendingWhatsApp(true);
+    try {
+      const res = await studentAPI.sendDecision(decisionStudent._id, {
+        ...decisionForm,
+        channel: 'whatsapp',
+      });
+      if (res.data.student) {
+        setStudents((prev) =>
+          prev.map((item) => (item._id === decisionStudent._id ? { ...item, ...res.data.student } : item))
+        );
+        setDecisionStudent((prev) => (prev ? { ...prev, ...res.data.student } : null));
+        studentAPI.getStats().then((sRes) => setStats(sRes.data)).catch(() => {});
+      }
+
+      // Build formatted WhatsApp message with Mr. Esron's note & credentials
+      const msg = buildWhatsAppAdmissionMessage(decisionForm);
+      const waUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(msg)}`;
+      window.open(waUrl, '_blank');
+
+      toast.success(`WhatsApp opened for +${cleanNumber}! Click Send in WhatsApp to deliver credentials.`);
+      setDecisionTab('preview');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to update student decision');
+    } finally {
+      setSendingWhatsApp(false);
+    }
+  };
+
+  const handleSendBoth = async () => {
+    if (!decisionStudent) return;
+    if (!decisionForm.email) {
+      toast.error('Applicant email is required');
+      return;
+    }
+    if (!decisionForm.phoneNumber || !decisionForm.phoneNumber.trim()) {
+      toast.error('Applicant phone number is required for WhatsApp');
+      return;
+    }
+    const cleanNumber = formatWhatsAppNumber(decisionForm.phoneNumber);
+    if (!cleanNumber || cleanNumber.length < 8) {
+      toast.error('Please enter a valid phone number (e.g. 078... or +250 788 123 456)');
+      return;
+    }
+
+    setSendingBoth(true);
+    try {
+      // 1. Dispatch email from backend
+      const res = await studentAPI.sendDecision(decisionStudent._id, {
+        ...decisionForm,
+        channel: 'both',
+      });
+      toast.success(res.data.message || `Admission decision dispatched to ${decisionForm.email}!`);
+      if (res.data.student) {
+        setStudents((prev) =>
+          prev.map((item) => (item._id === decisionStudent._id ? { ...item, ...res.data.student } : item))
+        );
+        setDecisionStudent((prev) => (prev ? { ...prev, ...res.data.student } : null));
+        studentAPI.getStats().then((sRes) => setStats(sRes.data)).catch(() => {});
+      }
+
+      // 2. Open WhatsApp directly with prefilled message (no download forced)
+      const msg = buildWhatsAppAdmissionMessage(decisionForm);
+      const waUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(msg)}`;
+      window.open(waUrl, '_blank');
+
+      toast.success(`Email dispatched and WhatsApp opened for +${cleanNumber}!`, { duration: 6000 });
+      setDecisionTab('preview');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to send applicant decision');
+    } finally {
+      setSendingBoth(false);
     }
   };
 
@@ -1359,38 +1447,87 @@ export default function StudentRecords() {
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-200 dark:border-white/10">
-                  <button
-                    type="button"
-                    onClick={() => setDecisionTab('preview')}
-                    className="btn-secondary py-2.5 px-4 text-xs font-bold flex items-center gap-1.5"
-                  >
-                    <Sparkles size={14} className="text-cyan-400" />
-                    <span>View Interactive Card & PDF</span>
-                  </button>
-
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDecisionTab('preview')}
+                      className="btn-secondary py-2.5 px-3.5 text-xs font-bold flex items-center gap-1.5"
+                    >
+                      <Sparkles size={14} className="text-cyan-400" />
+                      <span>View Interactive Card & PDF</span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => setDecisionModalOpen(false)}
-                      className="btn-secondary py-2.5 px-4 text-xs font-bold"
+                      className="btn-secondary py-2.5 px-3 text-xs font-bold"
                     >
                       Cancel
                     </button>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Send to WhatsApp directly without downloading PDF */}
+                    <button
+                      type="button"
+                      onClick={handleSendWhatsApp}
+                      disabled={sendingWhatsApp || !decisionForm.phoneNumber}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-black font-extrabold text-xs shadow-lg shadow-[#25D366]/25 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                      title="Send credentials directly to applicant's WhatsApp without downloading"
+                    >
+                      {sendingWhatsApp ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                          <span>Opening WhatsApp...</span>
+                        </>
+                      ) : (
+                        <>
+                          <WhatsAppIcon size={14} />
+                          <span>Send to WhatsApp</span>
+                        </>
+                      )}
+                    </button>
+
+                    {/* Send to Student Email Inbox */}
                     <button
                       type="button"
                       onClick={handleSendDecision}
                       disabled={sendingDecision || !decisionForm.email}
-                      className="btn-primary py-2.5 px-6 text-xs font-extrabold flex items-center gap-2 shadow-lg shadow-cyan-500/25 bg-gradient-to-r from-cyan-500 via-blue-600 to-emerald-500 text-black hover:opacity-95 disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                      title="Dispatch directly to applicant's email inbox"
                     >
                       {sendingDecision ? (
                         <>
-                          <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                          <span>Sending Email to Applicant...</span>
+                          <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                          <span>Sending Email...</span>
                         </>
                       ) : (
                         <>
-                          <Send size={14} />
-                          <span>Send to Student Email Inbox</span>
+                          <Mail size={14} />
+                          <span>Send to Student Email</span>
+                        </>
+                      )}
+                    </button>
+
+                    {/* Send to Both (Email & WhatsApp) */}
+                    <button
+                      type="button"
+                      onClick={handleSendBoth}
+                      disabled={sendingBoth || !decisionForm.email || !decisionForm.phoneNumber}
+                      className="btn-primary py-2.5 px-4 text-xs font-black flex items-center gap-1.5 shadow-lg shadow-cyan-500/30 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-400 text-black hover:opacity-95 disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-95"
+                      title="Send to both applicant's Email inbox and directly to WhatsApp"
+                    >
+                      {sendingBoth ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                          <span>Sending Both...</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <Mail size={13} />
+                            <WhatsAppIcon size={13} />
+                          </div>
+                          <span>Send to Both (Email &amp; WhatsApp)</span>
                         </>
                       )}
                     </button>
@@ -1408,6 +1545,10 @@ export default function StudentRecords() {
                   }}
                   onSendEmail={handleSendDecision}
                   isSendingEmail={sendingDecision}
+                  onSendWhatsApp={handleSendWhatsApp}
+                  isSendingWhatsApp={sendingWhatsApp}
+                  onSendBoth={handleSendBoth}
+                  isSendingBoth={sendingBoth}
                 />
 
                 <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-white/10">
